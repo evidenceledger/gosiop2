@@ -1,0 +1,39 @@
+clientID: "did:elsi:packetdeliveryco"
+clientKeyID: "e3f8da57-b305-42ea-a200-0928b1cb38b6"
+listenAddress: "127.0.0.1:8081"
+redirect_uri: "http://127.0.0.1:8081/auth/receive_vp"
+
+vault:
+  driverName: "sqlite3"
+  dataDir: "/home/jesus/.vault/"
+  dataSourceName: "file:/home/jesus/.vault/vaultdb.sqlite?mode=rwc&cache=shared&_fk=1"
+
+
+presentation_definition:
+  id: "customer_credentials"
+  format:
+    jwt_vc:
+      alg:
+      - "ES256"
+      - "ES384"
+      - "ES512"
+  input_descriptors:
+    - id: "CustomerCredential"
+      name: "Customer Credential"
+      purpose: "Check that user is a customer of a given type"
+      constraints:
+        fields:
+        - path:
+            - "$.credentialSubject.customer_type"
+          filter:
+            type: "string"
+            pattern:
+            - "GoldCustomer"
+            - "NormalCustomer"
+
+registration:
+  subject_syntax_types_supported:
+  - "did:uuid"
+  - "did:peer"
+  - "did:elsi"
+  - "did:ebsi"

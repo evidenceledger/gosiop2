@@ -1,0 +1,57 @@
+{{define "wallethome"}}
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>SIOP Wallet</title>
+    <link rel="stylesheet" href="/static/w3-1.css">
+</head>
+
+<body>
+
+    <script>
+        function toggleMenu() {
+            let x = document.getElementById("mainmenu")
+            x.classList.toggle("hidden")
+        }
+    </script>
+
+    <div class="w3-black">
+        <header class="w3-bar w3-card w3-large">
+            <a class="w3-bar-item w3-btn" href="/">
+                <svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" height="1em"
+                    width="1em">
+                    <path d="M 8 42 V 18 L24.1 6 40 18 v 24 H 28.3 V 27.75 h -8.65 V42 Z" />
+                </svg>
+            </a>
+            <div class="w3-bar-item">SIOP Wallet</div>
+            <a class="w3-bar-item w3-btn w3-right" onclick="toggleMenu()">☰</a>
+        </header>
+
+        <div id="mainmenu" class="w3-bar-block w3-card w3-dark-grey hidden">
+            <a href="/posts" class="w3-bar-item w3-button">Posts</a>
+        </div>
+    </div>
+
+    <div class="w3-container w3-margin w3-center">
+        <a href="/startsiop" class="w3-button w3-black w3-round-large">Start SIOP</a>
+    </div>
+    
+    <footer class="w3-container w3-black">
+        <div>
+            <p>
+                &copy; Evidence Ledger.
+                <a href="https://creativecommons.org/licenses/by/3.0/" title="Creative Commons Attribution">Creative
+                    Commons Attribution</a>;
+                please attribute properly and link back.
+            </p>
+        </div>
+    </footer>
+
+
+</body>
+
+</html>
+
+{{end}}

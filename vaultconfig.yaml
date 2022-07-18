@@ -1,0 +1,3 @@
+driverName: "sqlite3"
+dataDir: "/home/jesus/.vault/"
+dataSourceName: "file:/home/jesus/.vault/vaultdb.sqlite?mode=rwc&cache=shared&_fk=1"

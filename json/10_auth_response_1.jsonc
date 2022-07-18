@@ -1,0 +1,13 @@
+{
+  "iss": "did:peer:99ab5bca41bb45b78d242a46f0157b7d",
+  "sub": "did:peer:99ab5bca41bb45b78d242a46f0157b7d",
+  "aud": "did:elsi:EU.EORI.NLMARKETPLA",
+  "iat": 1652095081,
+  "response_type": "id_token",
+  "response_mode": "post",
+  "scope": ["openid"],
+  "state": "UsfafolcMz9X92LzzD4U5w",
+  "nonce": "PLOmEmfiS02zkJTDVMy9kw",
+  "id_token": {},
+  "vp_token": {}
+}

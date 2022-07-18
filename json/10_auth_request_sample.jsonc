@@ -1,0 +1,17 @@
+{
+  "iss": "did:elsi:EU.EORI.NLMARKETPLA",
+  "sub": "did:elsi:EU.EORI.NLMARKETPLA",
+  "iat": 1652093689,
+  "type": "siop",
+  "client_id": "did:elsi:EU.EORI.NLMARKETPLA",
+  "redirect_uri": "https://marketplace.i4trust.fiware.io/auth/receive_vp",
+  "response_type": "id_token",
+  "response_mode": "post",
+  "scope": ["openid"],
+  "state": "UsfafolcMz9X92LzzD4U5w",
+  "nonce": "PLOmEmfiS02zkJTDVMy9kw",
+  "claims": {},
+  "registration": {
+    "subject_syntax_types_supported": ["did:peer", "did:elsi", "did:ebsi"]
+  }
+}

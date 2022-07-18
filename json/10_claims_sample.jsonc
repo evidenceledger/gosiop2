@@ -1,0 +1,36 @@
+{
+  "id_token": {
+    "email": null
+  },
+  "vp_token": {
+    "presentation_definition": {
+      "id": "customer_credentials",
+      "format": {
+        "jwt_vc": {
+          "alg": ["ES256", "ES384", "ES512"]
+        },
+        "cwt_vc": {
+          "alg": ["ES256", "ES384", "ES512"]
+        }
+      },
+      "input_descriptors": [
+        {
+          "id": "CustomerCredential",
+          "name": "Customer Credential",
+          "purpose": "Check that user is a customer of a given type",
+          "constraints": {
+            "fields": [
+              {
+                "path": ["$.credentialSubject.customer_type"],
+                "filter": {
+                  "type": "string",
+                  "pattern": ["GoldCustomer", "NormalCustomer"]
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

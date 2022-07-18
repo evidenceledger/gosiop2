@@ -1,0 +1,15 @@
+clientID: "did:uuid:09b8a75c-6e8a-4992-ad47-362311595ec5"
+clientKeyID: "3e639b48-d904-4584-8b2d-05303e584159"
+listenAddress: "127.0.0.1:8080"
+relyingPartyAddress: "http://127.0.0.1:8081"
+
+vault:
+  driverName: "sqlite3"
+  dataDir: "/home/jesus/.vault/"
+  dataSourceName: "file:/home/jesus/.vault/vaultdb.sqlite?mode=rwc&cache=shared&_fk=1"
+
+registration:
+  subject_syntax_types_supported:
+  - "did:peer"
+  - "did:elsi"
+  - "did:ebsi"

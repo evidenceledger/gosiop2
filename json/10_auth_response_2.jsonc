@@ -1,0 +1,41 @@
+{
+  "@context": ["https://www.w3.org/2018/credentials/v1"],
+  "type": ["VerifiablePresentation"],
+  "verifiableCredential": [
+    {
+      "@context": [
+        "https://www.w3.org/2018/credentials/v1",
+        "https://i4trust.happypets.io/2022/credentials/customer/v1"
+      ],
+      "id": "https://i4trust.happypets.io/credentials/1872",
+      "type": ["VerifiableCredential", "CustomerCredential"],
+      "issuer": {
+        "id": "did:elsi:EORNL-PACKETDELIVERY_PRUEBAS"
+      },
+      "issuanceDate": "2020-01-01T19:23:24Z",
+      "credentialSubject": {
+        "id": "did:peer:99ab5bca41bb45b78d242a46f0157b7d",
+        "verificationMethod": [
+          {
+            "id": "did:peer:99ab5bca41bb45b78d242a46f0157b7d#key1",
+            "type": "JwsVerificationKey2020",
+            "controller": "did:peer:99ab5bca41bb45b78d242a46f0157b7d",
+            "publicKeyJwk": {
+              "kid": "key1",
+              "kty": "EC",
+              "crv": "P-256",
+              "x": "lJtvoA5_XptBvcfcrvtGCvXd9bLymmfBSSdNJf5mogo",
+              "y": "fSc4gZX2R3QKKfHvS3m2vGSVSN8Xc04qsquyfEM55Z0"
+            }
+          }
+        ],
+        "customer_type": "GoldCustomer",
+        "name": "Jane Doe",
+        "given_name": "Jane",
+        "family_name": "Doe",
+        "preferred_username": "j.doe",
+        "email": "janedoe@packetdelivery.com"
+      }
+    }
+  ]
+}
