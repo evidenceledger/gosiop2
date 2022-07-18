@@ -1,6 +1,6 @@
 # SIOPv2 and OIDC for Verifiable Credentials in Go
 
-This is a Go implementation of the OIDC extensions called OIDC4VP and SIOP2 which combined are a proven, flexible and powerful mechanism to implment a SSI system with W3C Verifiable Credentals.
+This is a Go implementation of the OIDC extensions called OIDC4VP and SIOP2 which combined are a proven, flexible and powerful mechanism to implement a SSI system with W3C Verifiable Credentals.
 
 This repository includes:
 
