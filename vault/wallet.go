@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/evidenceledger/gosiop2/ent"
 	"github.com/evidenceledger/gosiop2/ent/account"
@@ -29,7 +30,14 @@ type Wallet struct {
 	ctx    context.Context
 }
 
+var mutexForNew sync.Mutex
+
 func New(driverName string, dataSourceName string) (w *Wallet, err error) {
+
+	// Make sure only one thread performs initialization of the database,
+	// including migrations
+	mutexForNew.Lock()
+	defer mutexForNew.Unlock()
 
 	w = &Wallet{}
 

@@ -207,7 +207,7 @@ func Start(cmd *cobra.Command, args []string) {
 
 	// Precompile templates
 	t := &Template{
-		templates: template.Must(template.ParseGlob("templates/*.html")),
+		templates: template.Must(template.ParseGlob("cmd/siopwallet/templates/*.html")),
 	}
 	// register middleware to render templates
 	e.Renderer = t

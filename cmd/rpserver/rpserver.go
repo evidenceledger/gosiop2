@@ -152,6 +152,17 @@ func (rp *RPServer) HandleReceiveVP(c echo.Context) (err error) {
 		return err
 	}
 
+	// Here we have completed successfully the SIOPv2 and OIDC4VP flows and we have
+	// received a Verifiable Presentation in the vp_token.
+	// For a complete business scenario, we would pass the VP to a backend application
+	// via an API so the backend can perform aditional authentication and authorisation
+	// tasks using the contents of the one or more Verifiable Credentials included inside
+	// the VP.
+	// This RP implementation deals ONLY with the OIDC flows for transporting in a secure
+	// and interoperable way Verifiable Credentials.
+	// It does not include logic for acting on the contents of the Verifiable Credentials
+	// and delegates to a backend system for those tasks.
+
 	if out, err := json.MarshalIndent(aur, "", "   "); err == nil {
 		fmt.Println(string(out))
 	}
@@ -214,7 +225,7 @@ func Start(cmd *cobra.Command, args []string) {
 
 	// Precompile templates
 	t := &Template{
-		templates: template.Must(template.ParseGlob("templates/*.html")),
+		templates: template.Must(template.ParseGlob("cmd/rpserver/templates/*.html")),
 	}
 	// register middleware to render templates
 	e.Renderer = t
