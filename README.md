@@ -24,5 +24,10 @@ Of course, `gosiop2` is interoperable with any other compliant implementation of
 
 At the end of the flow, the RP backend receives a Verifiable Presentation with one or more Verifiable Credentials inside and can extract the data inside the verifiable Credential(s) to perform whatever business process it requires.
 
+If your RP backend is not implemented in Go, the RP implementation in this repository can be used in *Gateway mode* where a secure and robust stand-alone process implements transparently the SIOP2 & OIDC4VP flows and passes to your backend the Verifiable Credential as a `bearer` token using a simple API call that your backend has to implement.
+
+This is described conceptually in the following picture where the only difference is that the RP backend and `gosiop2 gateway` are separate processes.
+
+![](docs/images/concept_diagram-as_gateway.drawio.png)
 
 More documentation is coming very soon ...
