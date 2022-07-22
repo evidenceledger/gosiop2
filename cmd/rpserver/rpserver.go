@@ -13,10 +13,10 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/evidenceledger/gosiop2/jwt"
+	"github.com/evidenceledger/gosiop2/siop"
 	"github.com/evidenceledger/gosiop2/siop/authrequest"
 	"github.com/evidenceledger/gosiop2/siop/authresponse"
 	"github.com/evidenceledger/gosiop2/vault"
@@ -49,10 +49,9 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 }
 
 type RPServer struct {
-	//	config      *Config
 	cfg         *viper.Viper
-	vault       *vault.Wallet
-	authRequest *authrequest.AuthorizationRequest
+	vault       *vault.Vault
+	authRequest *authrequest.AuthenticationRequest
 }
 
 // handleHome presents the home page to the user
@@ -82,7 +81,7 @@ func handleHome(c echo.Context) error {
 // HandleStartSIOP is the HTTP handler for the route used by the wallet to start the SIOP flow
 func (rp *RPServer) HandleStartSIOP(c echo.Context) error {
 
-	// Generate the application state for checking when receiving the Authorization Response
+	// Generate the application state for checking when receiving the Authentication Response
 	state, err := randString(16)
 	if err != nil {
 		zlog.Error().Err(err).Send()
@@ -90,18 +89,18 @@ func (rp *RPServer) HandleStartSIOP(c echo.Context) error {
 	}
 
 	// Set a cookie in the reply so it will be sent back to us
-	// TODO: store state in the server session, to avoid cookies
-	// setCallbackCookie(c, "state", state)
 	setSession(c, "state", state)
 
-	// Generate SIOP Authorization Request as a JWT signed with our private key
-	// authorizationRequest, err := rp.authRequest.AsSerializedJWT(rp.privateKey, state)
-	// if err != nil {
-	// 	return err
-	// }
+	// We create an Authentication Request specific for SIOP flows.
+	// In case of SIOP the AuthRequest travels as a response to an HTTP request from
+	// the wallet, instead of being sent from the RP to the OP as a redirection.
+	// So instead of a URL-formatted request we send back an object in JSON serialization format:
+	// https://openid.net/specs/openid-connect-core-1_0.html#JSONSerialization
+	// In addition the request object is sent as a signed JWT so the SIOP can have a higher trust level
 
 	// Create a JWT (unsigned) with key ID and algorithm in the headers
-	token := jwt.NewWithClaims(jwt.SigningMethodES256, rp.authRequest)
+	signingMethod := jwt.GetSigningMethod(siop.DefaultPreferredAlgorithm)
+	token := jwt.NewWithClaims(signingMethod, rp.authRequest)
 	token.Header["kid"] = rp.cfg.GetString("clientKeyID")
 
 	// Ask the Vault to sign the JWT with the private key corresponding to the key ID
@@ -111,7 +110,8 @@ func (rp *RPServer) HandleStartSIOP(c echo.Context) error {
 	}
 
 	// And send it back to the caller
-	return c.String(http.StatusOK, authorizationRequest)
+	// return c.String(http.StatusOK, authorizationRequest)
+	return c.Blob(http.StatusOK, "application/jwt", []byte(authorizationRequest))
 
 }
 
@@ -125,8 +125,8 @@ func (rp *RPServer) HandleReceiveVP(c echo.Context) (err error) {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Error reading body")
 	}
 
-	// Parse the body into a SIOP Authorization Response, validating the signature
-	aur := &authresponse.AuthorizationResponse{}
+	// Parse the body into a SIOP Authentication Response, validating the signature
+	aur := &authresponse.AuthenticationResponse{}
 	if err != nil {
 		return err
 	}
@@ -142,12 +142,8 @@ func (rp *RPServer) HandleReceiveVP(c echo.Context) (err error) {
 		fmt.Println(string(out))
 	}
 
-	parts := strings.Split(token.Raw, ".")
-	headerPlusClaims := strings.Join(parts[0:2], ".")
-	alg := (token.Header["alg"]).(string)
-	kid := (token.Header["kid"]).(string)
-
-	err = rp.vault.VerifySignature(headerPlusClaims, parts[2], alg, kid)
+	// err = rp.vault.VerifySignature(headerPlusClaims, parts[2], alg, kid)
+	err = rp.vault.VerifySignature(token.ToBeSignedString, token.Signature, token.Alg(), token.Kid())
 	if err != nil {
 		return err
 	}
@@ -192,12 +188,6 @@ func Start(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	// Unmarshall in a configuration structure
-	// var config Config
-	// err = cfg.Unmarshal(&config)
-	// if err != nil {
-	// 	panic(err)
-	// }
 	zlog.Info().Msg("Starting RP server")
 
 	// Get our client identity
@@ -211,7 +201,6 @@ func Start(cmd *cobra.Command, args []string) {
 	}
 
 	rp := RPServer{}
-	// rp.config = &config
 	rp.cfg = cfg
 	rp.vault = v
 
@@ -242,7 +231,7 @@ func Start(cmd *cobra.Command, args []string) {
 	//TODO: generate a cryptographic secret for the session
 	e.Use(session.Middleware(sessions.NewCookieStore([]byte("EraseUnaVezUnSecretoAVoces"))))
 
-	// Create a pre-configured Authentication Request, specifying:
+	// Create a pre-configured Authentication Request (unsigned), specifying:
 	// - our identity, as a DID
 	// - the URL where the wallet should send us the Authentication Response with the vp_token
 	// - the OIDC4VP presentation_definition specifying the type of Credential that we want
@@ -250,16 +239,18 @@ func Start(cmd *cobra.Command, args []string) {
 	redirect_uri := cfg.GetString("redirect_uri")
 
 	var presentation_definition authrequest.PresentationDefinition
-	err = viper.UnmarshalKey("presentation_definition", &presentation_definition)
+	err = cfg.UnmarshalKey("presentation_definition", &presentation_definition)
 	if err != nil {
 		panic(err)
 	}
 	var registration authrequest.Registration
-	err = viper.UnmarshalKey("registration", &registration)
+	err = cfg.UnmarshalKey("registration", &registration)
+	// err = viper.UnmarshalKey("registration", &registration)
 	if err != nil {
 		panic(err)
 	}
 
+	// Create the Authentication Request object
 	rp.authRequest = authrequest.New(clientID, redirect_uri, presentation_definition, registration)
 
 	// Setup the routes
@@ -284,24 +275,6 @@ func randString(nByte int) (string, error) {
 		return "", err
 	}
 	return base64.RawURLEncoding.EncodeToString(b), nil
-}
-
-func setCallbackCookie(c echo.Context, name string, value string) {
-	cookie := &http.Cookie{
-		Name:       name,
-		Value:      value,
-		Path:       "",
-		Domain:     "",
-		Expires:    time.Time{},
-		RawExpires: "",
-		MaxAge:     int(time.Hour.Seconds()),
-		Secure:     c.Request().TLS != nil,
-		HttpOnly:   true,
-		SameSite:   http.SameSiteStrictMode,
-		Raw:        "",
-		Unparsed:   []string{},
-	}
-	c.SetCookie(cookie)
 }
 
 func setSession(c echo.Context, name string, value string) {

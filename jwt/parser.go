@@ -195,14 +195,14 @@ func (p *Parser) ParseUnverified2(tokenString string, claims Claims) (token *Tok
 
 	// TODO: verify header for minimum requirements, eg alg and kid
 
-	// Check that signature alg is included in header
+	// Check that signature alg is included in header and it is a string
 	alg, ok := token.Header["alg"].(string)
 	if !ok {
 		return nil, NewValidationError("signing method (alg) not in token header.", ValidationErrorUnverifiable)
 	}
 	token.Header["alg"] = alg
 
-	// Check that kid is included in header
+	// Check that kid is included in header and it is a string
 	kid, ok := token.Header["kid"].(string)
 	if !ok {
 		return nil, NewValidationError("signing method (alg) not in token header.", ValidationErrorUnverifiable)
@@ -233,7 +233,7 @@ func (p *Parser) ParseUnverified2(tokenString string, claims Claims) (token *Tok
 	token.Claims = claims
 
 	// And the corresponding parts
-	token.RawSignedString = strings.Join(parts[0:2], ".")
+	token.ToBeSignedString = strings.Join(parts[0:2], ".")
 	token.Signature = parts[2]
 
 	// TODO: verify claims for minimum requirements

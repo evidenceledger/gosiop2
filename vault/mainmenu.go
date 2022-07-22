@@ -329,9 +329,9 @@ func askText(promptText string) (theText string) {
 
 }
 
-func mustGetWallet(values ...any) *Wallet {
+func mustGetWallet(values ...any) *Vault {
 
-	var w *Wallet
+	var w *Vault
 	var ok bool
 
 	// We need the wallet instance to be passed as a parameter
@@ -340,7 +340,7 @@ func mustGetWallet(values ...any) *Wallet {
 	}
 
 	// Cast to the Wallet type
-	w, ok = (values[0]).(*Wallet)
+	w, ok = (values[0]).(*Vault)
 	if !ok {
 		panic("expecting parameter of type Wallet")
 	}

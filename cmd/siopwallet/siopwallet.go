@@ -11,7 +11,6 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"strings"
 	"text/template"
 	"time"
 
@@ -46,8 +45,8 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 
 type WalletServer struct {
 	cfg         *viper.Viper
-	vault       *vault.Wallet
-	authRequest *authrequest.AuthorizationRequest
+	vault       *vault.Vault
+	authRequest *authrequest.AuthenticationRequest
 }
 
 // handleHome is the HTTP handler for the home page of the wallet
@@ -60,7 +59,7 @@ func handleHome(c echo.Context) error {
 // We call the RP and receive an AuthorizationRequest, and display it to the user
 func (w *WalletServer) handleStartSIOP(c echo.Context) (err error) {
 
-	// Call the endpoint in the RP to retrieve the Authorization Request
+	// Call the endpoint in the RP to retrieve the Authentication Request
 	// TODO: use discovery for getting the endpoint
 	startURL := w.cfg.GetString("relyingPartyAddress") + "/startsiop"
 	err, body := doGET(startURL)
@@ -69,8 +68,8 @@ func (w *WalletServer) handleStartSIOP(c echo.Context) (err error) {
 		return err
 	}
 
-	// Parse the body into a SIOP Authorization Request, validating the signature
-	aur := &authrequest.AuthorizationRequest{}
+	// Parse the body into a SIOP Authentication Request, validating the signature
+	aur := &authrequest.AuthenticationRequest{}
 	if err != nil {
 		return err
 	}
@@ -82,7 +81,7 @@ func (w *WalletServer) handleStartSIOP(c echo.Context) (err error) {
 	}
 
 	// Store temporarily the request in the server structure
-	// We will need it to send the corresponding Authorization Response to the RP
+	// We will need it to send the corresponding Authentication Response to the RP
 	// TODO: make the implementation multi-user. Now the wallet server is for only one user
 	w.authRequest = aur
 
@@ -92,14 +91,8 @@ func (w *WalletServer) handleStartSIOP(c echo.Context) (err error) {
 		zlog.Debug().Msg(string(out))
 	}
 
-	// Get the keyID, algorithm and signed string to verify
-	parts := strings.Split(token.Raw, ".")
-	headerPlusClaims := strings.Join(parts[0:2], ".")
-	alg := (token.Header["alg"]).(string)
-	kid := (token.Header["kid"]).(string)
-
 	// Verify the signature
-	err = w.vault.VerifySignature(headerPlusClaims, parts[2], alg, kid)
+	err = w.vault.VerifySignature(token.ToBeSignedString, token.Signature, token.Alg(), token.Kid())
 	if err != nil {
 		return err
 	}
@@ -110,12 +103,12 @@ func (w *WalletServer) handleStartSIOP(c echo.Context) (err error) {
 		return err
 	}
 
-	// Display Authorization Request to the wallet user
+	// Display Authentication Request to the wallet user
 	// The user can then choose to send the credential(s) to the RP aor not
 	return c.Render(http.StatusOK, "walletauthrequest", string(out))
 }
 
-// handleSendAuthorizationResponse is the HTTP handler for sending the Authorization Response to the RP
+// handleSendAuthorizationResponse is the HTTP handler for sending the Authentication Response to the RP
 func (w *WalletServer) handleSendAuthorizationResponse(c echo.Context) error {
 
 	// Get our keyID from the config file
@@ -127,7 +120,7 @@ func (w *WalletServer) handleSendAuthorizationResponse(c echo.Context) error {
 		return err
 	}
 
-	// Create the Authorization Response (unsigned) to be sent to the RP
+	// Create the Authentication Response (unsigned) to be sent to the RP
 	authResponse := authresponse.New(w.cfg.GetString("clientID"), w.authRequest, vp_token)
 
 	// Create a JWT (unsigned) with key ID and algorithm in the headers
@@ -140,7 +133,7 @@ func (w *WalletServer) handleSendAuthorizationResponse(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, err)
 	}
 
-	// Send the Authorization Response to the RP as a POST
+	// Send the Authentication Response to the RP as a POST
 	err, _ = doPOST(w.authRequest.Redirect_uri, ss)
 	if err != nil {
 		return err
@@ -248,10 +241,10 @@ func doGET(url string) (error, []byte) {
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(resp.Body)
-	if resp.StatusCode > 299 {
+	if err != nil {
 		return echo.NewHTTPError(resp.StatusCode), nil
 	}
-	if err != nil {
+	if resp.StatusCode > 299 {
 		return echo.NewHTTPError(resp.StatusCode), nil
 	}
 	return nil, body
@@ -273,9 +266,12 @@ func doPOST(url string, payload string) (error, []byte) {
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return echo.NewHTTPError(resp.StatusCode), nil
+	}
 	if resp.StatusCode > 299 {
 		return echo.NewHTTPError(resp.StatusCode), nil
 	}
 
-	return err, body
+	return nil, body
 }

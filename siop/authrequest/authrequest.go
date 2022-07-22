@@ -63,7 +63,7 @@ type Registration struct {
 	Subject_syntax_types_supported []string `json:"subject_syntax_types_supported"`
 }
 
-type AuthorizationRequest struct {
+type AuthenticationRequest struct {
 	jwt.RegisteredClaims
 	Type                    string                 `json:"type"`
 	Client_id               string                 `json:"client_id"`
@@ -76,7 +76,7 @@ type AuthorizationRequest struct {
 	Registration            Registration           `json:"registration"`
 }
 
-func New(client_id string, redirect_uri string, pd PresentationDefinition, registration Registration) *AuthorizationRequest {
+func New(client_id string, redirect_uri string, pd PresentationDefinition, registration Registration) *AuthenticationRequest {
 
 	stdCl := jwt.RegisteredClaims{
 		Issuer:   client_id,
@@ -84,7 +84,7 @@ func New(client_id string, redirect_uri string, pd PresentationDefinition, regis
 		IssuedAt: jwt.NewNumericDate(time.Now()),
 	}
 
-	ar := &AuthorizationRequest{
+	ar := &AuthenticationRequest{
 		RegisteredClaims:        stdCl,
 		Type:                    "siop",
 		Client_id:               client_id,
@@ -99,18 +99,18 @@ func New(client_id string, redirect_uri string, pd PresentationDefinition, regis
 	return ar
 }
 
-// Parse is used by the SIOP to verify an Authorization Request received from a RP
-func Parse(tokenString string, keyFunc jwt.Keyfunc) (*AuthorizationRequest, error) {
+// Parse is used by the SIOP to verify an Authentication Request received from a RP
+func Parse(tokenString string, keyFunc jwt.Keyfunc) (*AuthenticationRequest, error) {
 
-	// Verify signature and parse into Authorization Request struct
-	token, err := jwt.ParseWithClaims(tokenString, &AuthorizationRequest{}, keyFunc)
+	// Verify signature and parse into Authentication Request struct
+	token, err := jwt.ParseWithClaims(tokenString, &AuthenticationRequest{}, keyFunc)
 	if err != nil {
 		return nil, err
 	}
 
 	// Verify the standard JWT claims.
 	// Later we should verify the rest of the fields of the Auth Request
-	claims, ok := token.Claims.(*AuthorizationRequest)
+	claims, ok := token.Claims.(*AuthenticationRequest)
 	if ok && token.Valid {
 		return claims, nil
 	} else {
@@ -126,7 +126,7 @@ func GenerateNonce() string {
 }
 
 // AsSerializedJWT returns the AuthorizationRequest as a JWT signed by the private key
-func (ar *AuthorizationRequest) AsSerializedJWT(privateKey crypto.PrivateKey, state string) (string, error) {
+func (ar *AuthenticationRequest) AsSerializedJWT(privateKey crypto.PrivateKey, state string) (string, error) {
 
 	// Regenerate time-dependent fields
 	ar.IssuedAt = jwt.NewNumericDate(time.Now())
@@ -143,7 +143,7 @@ func (ar *AuthorizationRequest) AsSerializedJWT(privateKey crypto.PrivateKey, st
 	return ss, err
 }
 
-// // SIOPAuthRequestAsURL returns a SIOP Authorization Request formatted as a URL
+// // SIOPAuthRequestAsURL returns a SIOP Authentication Request formatted as a URL
 // func (s *SIOPConfig) SIOPAuthRequestAsURL(state string, nonce string) string {
 // 	var buf bytes.Buffer
 // 	buf.WriteString(s.Schema)

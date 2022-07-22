@@ -44,17 +44,23 @@ var (
 	errInvalidAtHash = errors.New("access token hash does not match value in ID token")
 )
 
-// type ClaimsFromJSON struct {
-// 	Id string
-// }
+// supportedAlgorithms is a list of algorithms explicitly supported by this
+// package. If a provider supports other algorithms, such as HS256 or none,
+// those values won't be passed to the IDTokenVerifier.
+var supportedAlgorithms = map[string]bool{
+	RS256: true,
+	RS384: true,
+	RS512: true,
+	ES256: true,
+	ES384: true,
+	ES512: true,
+	PS256: true,
+	PS384: true,
+	PS512: true,
+}
 
-// func (cl *ClaimsFromJSON) ParseFile(name string) []byte {
-// 	var b bytes.Buffer
-// 	tmpl := template.Must(template.ParseFiles(name))
-
-// 	tmpl.Execute(&b, cl)
-// 	return b.Bytes()
-// }
+// DefaultPreferredAlgorithm is the algorithm used by default by this package
+var DefaultPreferredAlgorithm = ES256
 
 //*****************************************************************
 //*****************************************************************
@@ -143,21 +149,6 @@ type providerJSON struct {
 	JWKSURL     string   `json:"jwks_uri"`
 	UserInfoURL string   `json:"userinfo_endpoint"`
 	Algorithms  []string `json:"id_token_signing_alg_values_supported"`
-}
-
-// supportedAlgorithms is a list of algorithms explicitly supported by this
-// package. If a provider supports other algorithms, such as HS256 or none,
-// those values won't be passed to the IDTokenVerifier.
-var supportedAlgorithms = map[string]bool{
-	RS256: true,
-	RS384: true,
-	RS512: true,
-	ES256: true,
-	ES384: true,
-	ES512: true,
-	PS256: true,
-	PS384: true,
-	PS512: true,
 }
 
 // ProviderConfig allows creating providers when discovery isn't supported. It's
@@ -676,7 +667,7 @@ func resolveDistributedClaim(ctx context.Context, verifier *IDTokenVerifier, src
 		return nil, fmt.Errorf("malformed request: %v", err)
 	}
 	if src.AccessToken != "" {
-		req.Header.Set("Authorization", "Bearer "+src.AccessToken)
+		req.Header.Set("Authentication", "Bearer "+src.AccessToken)
 	}
 
 	resp, err := doRequest(ctx, req)

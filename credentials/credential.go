@@ -37,7 +37,7 @@ func init() {
 	t = template.Must(template.ParseGlob("credentials/templates/*.tpl"))
 }
 
-func GetCredentials(v *vault.Wallet) (json.RawMessage, error) {
+func GetCredentials(v *vault.Vault) (json.RawMessage, error) {
 	var b bytes.Buffer
 
 	credData := credentialExamples[0]

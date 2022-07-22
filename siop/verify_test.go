@@ -378,7 +378,7 @@ func (v resolverTest) testEndpoint(t *testing.T) ([]byte, error) {
 	defer cancel()
 
 	s := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		got := r.Header.Get("Authorization")
+		got := r.Header.Get("Authentication")
 		if got != "" && got != "Bearer 1234" {
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return

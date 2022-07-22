@@ -1,9 +1,7 @@
 package vault
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -25,42 +23,42 @@ func init() {
 	zlog.Logger = zlog.With().Caller().Logger()
 }
 
-type Wallet struct {
+type Vault struct {
 	client *ent.Client
 	ctx    context.Context
 }
 
 var mutexForNew sync.Mutex
 
-func New(driverName string, dataSourceName string) (w *Wallet, err error) {
+func New(driverName string, dataSourceName string) (v *Vault, err error) {
 
 	// Make sure only one thread performs initialization of the database,
 	// including migrations
 	mutexForNew.Lock()
 	defer mutexForNew.Unlock()
 
-	w = &Wallet{}
+	v = &Vault{}
 
-	w.client, err = ent.Open(driverName, dataSourceName)
+	v.client, err = ent.Open(driverName, dataSourceName)
 	if err != nil {
 		zlog.Error().Err(err).Msg("failed opening database")
 		return nil, err
 	}
-	w.ctx = context.Background()
+	v.ctx = context.Background()
 
 	// Run the auto migration tool.
-	if err := w.client.Schema.Create(w.ctx); err != nil {
+	if err := v.client.Schema.Create(v.ctx); err != nil {
 		zlog.Error().Err(err).Msg("failed creating schema resources")
 		return nil, err
 	}
 
-	return w, nil
+	return v, nil
 }
 
-func (w *Wallet) CreateAccountWithKey(name string) (*ent.Account, error) {
+func (v *Vault) CreateAccountWithKey(name string) (*ent.Account, error) {
 
 	// Check if the account already exists
-	num := w.client.Account.Query().Where(account.Name(name)).CountX(w.ctx)
+	num := v.client.Account.Query().Where(account.Name(name)).CountX(v.ctx)
 	if num > 0 {
 		return nil, fmt.Errorf("account already exists")
 	}
@@ -81,12 +79,12 @@ func (w *Wallet) CreateAccountWithKey(name string) (*ent.Account, error) {
 
 	// Store in DB
 	kid := privKey.GetKid()
-	dbKey, err := w.client.PrivateKey.
+	dbKey, err := v.client.PrivateKey.
 		Create().
 		SetID(kid).
 		SetKty("EC").
 		SetJwk(asJSON).
-		Save(w.ctx)
+		Save(v.ctx)
 	if err != nil {
 		zlog.Error().Err(err).Msg("failed storing key")
 		return nil, err
@@ -94,11 +92,11 @@ func (w *Wallet) CreateAccountWithKey(name string) (*ent.Account, error) {
 	zlog.Info().Str("kid", kid).Msg("key created")
 
 	// Create new acount
-	account, err := w.client.Account.
+	account, err := v.client.Account.
 		Create().
 		SetName(name).
 		AddKeys(dbKey).
-		Save(w.ctx)
+		Save(v.ctx)
 
 	zlog.Info().Str("name", name).Msg("account created")
 
@@ -106,10 +104,10 @@ func (w *Wallet) CreateAccountWithKey(name string) (*ent.Account, error) {
 
 }
 
-func (w *Wallet) AddKeyToAccount(name string) (*ent.PrivateKey, error) {
+func (v *Vault) AddKeyToAccount(name string) (*ent.PrivateKey, error) {
 
 	// Get the account
-	acc, err := w.client.Account.Query().Where(account.Name(name)).Only(w.ctx)
+	acc, err := v.client.Account.Query().Where(account.Name(name)).Only(v.ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -130,19 +128,19 @@ func (w *Wallet) AddKeyToAccount(name string) (*ent.PrivateKey, error) {
 
 	// Store in DB
 	kid := privKey.GetKid()
-	dbKey, err := w.client.PrivateKey.
+	dbKey, err := v.client.PrivateKey.
 		Create().
 		SetID(kid).
 		SetKty("EC").
 		SetJwk(asJSON).
-		Save(w.ctx)
+		Save(v.ctx)
 	if err != nil {
 		zlog.Error().Err(err).Msg("failed storing key")
 		return nil, err
 	}
 	zlog.Info().Str("kid", kid).Msg("key created")
 
-	acc.Update().AddKeys(dbKey).Save(w.ctx)
+	acc.Update().AddKeys(dbKey).Save(v.ctx)
 
 	zlog.Info().Str("name", name).Msg("account updated")
 
@@ -150,13 +148,13 @@ func (w *Wallet) AddKeyToAccount(name string) (*ent.PrivateKey, error) {
 
 }
 
-func (w *Wallet) QueryAccount(name string) (acc *ent.Account, err error) {
-	a, err := w.client.Account.
+func (v *Vault) QueryAccount(name string) (acc *ent.Account, err error) {
+	a, err := v.client.Account.
 		Query().
 		Where(account.Name(name)).
 		// `Only` fails if no user found,
 		// or more than 1 user returned.
-		Only(w.ctx)
+		Only(v.ctx)
 	if _, ok := err.(*ent.NotFoundError); ok {
 		zlog.Debug().Err(err).Str("name", name).Msg("account not found")
 		return nil, err
@@ -170,15 +168,15 @@ func (w *Wallet) QueryAccount(name string) (acc *ent.Account, err error) {
 
 }
 
-func (w *Wallet) QueryKeysForAccount(name string) (keys []*key.JWK, err error) {
+func (v *Vault) QueryKeysForAccount(name string) (keys []*key.JWK, err error) {
 
-	acc, err := w.QueryAccount(name)
+	acc, err := v.QueryAccount(name)
 	if err != nil {
 		zlog.Error().Err(err).Str("name", name).Send()
 		return nil, err
 	}
 
-	entKeys, err := acc.QueryKeys().All(w.ctx)
+	entKeys, err := acc.QueryKeys().All(v.ctx)
 	if err != nil {
 		zlog.Error().Err(err).Str("name", name).Send()
 		return nil, err
@@ -197,10 +195,10 @@ func (w *Wallet) QueryKeysForAccount(name string) (keys []*key.JWK, err error) {
 	return keys, nil
 }
 
-func (w *Wallet) QueryKeyByID(id string) (jwk *key.JWK, err error) {
+func (v *Vault) QueryKeyByID(id string) (jwk *key.JWK, err error) {
 
 	// Retrieve key by its ID, which should be unique
-	k, err := w.client.PrivateKey.Get(w.ctx, id)
+	k, err := v.client.PrivateKey.Get(v.ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -214,91 +212,8 @@ func (w *Wallet) QueryKeyByID(id string) (jwk *key.JWK, err error) {
 	return jwk, err
 }
 
-func (w *Wallet) VerifySerializedJWT(tokenString string) (verified bool, err error) {
-
-	// A JWT token is composed of 3 parts concatenated by dots (".")
-	parts := strings.Split(tokenString, ".")
-	if len(parts) != 3 {
-		return false, jwt.NewValidationError("token contains an invalid number of segments", jwt.ValidationErrorMalformed)
-	}
-
-	// Initialize the Token struct
-	token := &jwt.Token{Raw: tokenString}
-
-	// Parse Header
-	var headerBytes []byte
-	if headerBytes, err = jwt.DecodeSegment(parts[0]); err != nil {
-		return false, &jwt.ValidationError{Inner: err, Errors: jwt.ValidationErrorMalformed}
-	}
-	if err = json.Unmarshal(headerBytes, &token.Header); err != nil {
-		return false, &jwt.ValidationError{Inner: err, Errors: jwt.ValidationErrorMalformed}
-	}
-
-	// TODO: verify header for minimum requirements, eg alg and kid
-
-	// Lookup signature alg
-	alg, ok := token.Header["alg"].(string)
-	if !ok {
-		return false, jwt.NewValidationError("signing method (alg) not in token header.", jwt.ValidationErrorUnverifiable)
-	}
-
-	// Lookup signature kid
-	kid, ok := token.Header["kid"].(string)
-	if !ok {
-		return false, jwt.NewValidationError("signing method (alg) not in token header.", jwt.ValidationErrorUnverifiable)
-	}
-
-	// Get the key for verification
-	jwk, err := w.QueryKeyByID(kid)
-	if err != nil {
-		return false, err
-	}
-
-	// Convert the key to native
-	key, err := jwk.GetPublicKey()
-	if err != nil {
-		return false, err
-	}
-
-	// parse Claims
-	var claimBytes []byte
-	var claims = make(jwt.MapClaims)
-	token.Claims = claims
-	if claimBytes, err = jwt.DecodeSegment(parts[1]); err != nil {
-		return false, &jwt.ValidationError{Inner: err, Errors: jwt.ValidationErrorMalformed}
-	}
-
-	// JSON Decode
-	dec := json.NewDecoder(bytes.NewBuffer(claimBytes))
-	dec.UseNumber()
-	err = dec.Decode(&claims)
-	if err != nil {
-		return false, &jwt.ValidationError{Inner: err, Errors: jwt.ValidationErrorMalformed}
-	}
-
-	// TODO: verify claims for minimum requirements
-
-	if token.Method = jwt.GetSigningMethod(alg); token.Method == nil {
-		return false, jwt.NewValidationError("signing method (alg) is unavailable.", jwt.ValidationErrorUnverifiable)
-	}
-
-	// Concatenate headers and claims as undecoded strings
-	signingString := strings.Join(parts[0:2], ".")
-
-	// The signature part is the third
-	token.Signature = parts[2]
-
-	// Verify signature
-	if err = token.Method.Verify(signingString, token.Signature, key); err != nil {
-		return false, jwt.NewValidationError("signature not verified.", jwt.ValidationErrorSignatureInvalid)
-	}
-
-	// All validations performed, reply with success
-	return true, nil
-
-}
-
-func (w *Wallet) SignJWT(token *jwt.Token) (signedString string, err error) {
+// SignJWT signs the JWT using the algorithm and key ID in its header
+func (v *Vault) SignJWT(token *jwt.Token) (signedString string, err error) {
 
 	var toBeSigned string
 
@@ -307,19 +222,15 @@ func (w *Wallet) SignJWT(token *jwt.Token) (signedString string, err error) {
 		return "", err
 	}
 
-	// Get the key id used in this token
-	kid := (token.Header["kid"]).(string)
-
-	// Get the algorithm used to sign
-	alg := (token.Header["alg"]).(string)
-
-	signedString, err = w.SignString(toBeSigned, alg, kid)
+	// Perform the signature
+	signedString, err = v.SignString(toBeSigned, token.Alg(), token.Kid())
 
 	return signedString, err
 
 }
 
-func (w *Wallet) SignString(toBeSigned string, alg string, kid string) (signedString string, err error) {
+// SignString signs the string using the key with given ID and using algorithm alg
+func (v *Vault) SignString(toBeSigned string, alg string, kid string) (signedString string, err error) {
 
 	var signature string
 
@@ -327,7 +238,7 @@ func (w *Wallet) SignString(toBeSigned string, alg string, kid string) (signedSt
 	method := jwt.GetSigningMethod(alg)
 
 	// Get the private key for signing
-	jwk, err := w.QueryKeyByID(kid)
+	jwk, err := v.QueryKeyByID(kid)
 	if err != nil {
 		return "", err
 	}
@@ -348,13 +259,11 @@ func (w *Wallet) SignString(toBeSigned string, alg string, kid string) (signedSt
 
 }
 
-// *****************************************************
-// *****************************************************
-
-func (w *Wallet) VerifySignature(signedString string, signature string, alg string, kid string) (err error) {
+// VerifySignature verifies that a signature corresponds to a signed string given a jey ID and algorithm
+func (v *Vault) VerifySignature(signedString string, signature string, alg string, kid string) (err error) {
 
 	// Get the key for verification
-	jwk, err := w.QueryKeyByID(kid)
+	jwk, err := v.QueryKeyByID(kid)
 	if err != nil {
 		return err
 	}

@@ -18,8 +18,8 @@ func init() {
 	log.Logger = log.With().Caller().Logger()
 }
 
-// The AuthorizationResponse structure that SIOP sends and RPs receive
-type AuthorizationResponse struct {
+// The AuthenticationResponse structure that SIOP sends and RPs receive
+type AuthenticationResponse struct {
 	jwt.RegisteredClaims // The standard JWT claims
 	//	Id_token             IDToken         `json:"id_token"`      // id_token in standard OIDC
 	Client_id     string          `json:"client_id"`     // client_id of the RP
@@ -82,7 +82,7 @@ type IDToken struct {
 // New is used by SIOP to create an AuthorizationResponse from the AuthorizationRequest received
 // from the RP. It includes the vp_token created by SIOP to send the Verifiable Presentation.
 // This is self-issued, so Issuer and Subject are set to the ID of the SIOP user (normally a DID)
-func New(client_id string, authRequest *authrequest.AuthorizationRequest, vp_token json.RawMessage) *AuthorizationResponse {
+func New(client_id string, authRequest *authrequest.AuthenticationRequest, vp_token json.RawMessage) *AuthenticationResponse {
 
 	standardClaims := jwt.RegisteredClaims{
 		Issuer:   client_id,
@@ -96,7 +96,7 @@ func New(client_id string, authRequest *authrequest.AuthorizationRequest, vp_tok
 	// 	IssuedAt: standardClaims.IssuedAt.Time,
 	// }
 
-	ar := &AuthorizationResponse{
+	ar := &AuthenticationResponse{
 		//		Id_token:      id_token,
 		Vp_token:      vp_token,
 		Client_id:     client_id,
@@ -113,17 +113,17 @@ func New(client_id string, authRequest *authrequest.AuthorizationRequest, vp_tok
 // ParseAndValidate generates an AuthorizationResponse from a JWT, validating the signature
 // keyFunc is a function that receives a JWT and retrieves the corresponding public key using
 // the key id in the header of the JWT
-func ParseAndValidate(tokenString string, keyFunc jwt.Keyfunc) (*AuthorizationResponse, error) {
+func ParseAndValidate(tokenString string, keyFunc jwt.Keyfunc) (*AuthenticationResponse, error) {
 
 	// Parse and validate the JWT
-	token, err := jwt.ParseWithClaims(tokenString, &AuthorizationResponse{}, keyFunc)
+	token, err := jwt.ParseWithClaims(tokenString, &AuthenticationResponse{}, keyFunc)
 	if err != nil {
 		log.Error().Err(err).Send()
 		return nil, err
 	}
 
 	// The Claims segment of the decoded JWT should be the AuthorizationResponse
-	claims, ok := token.Claims.(*AuthorizationResponse)
+	claims, ok := token.Claims.(*AuthenticationResponse)
 	if ok && token.Valid {
 		return claims, nil
 	} else {
