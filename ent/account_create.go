@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/evidenceledger/gosiop2/ent/account"
+	"github.com/evidenceledger/gosiop2/ent/credential"
 	"github.com/evidenceledger/gosiop2/ent/privatekey"
 )
 
@@ -68,6 +69,21 @@ func (ac *AccountCreate) AddKeys(p ...*PrivateKey) *AccountCreate {
 		ids[i] = p[i].ID
 	}
 	return ac.AddKeyIDs(ids...)
+}
+
+// AddCredentialIDs adds the "credentials" edge to the Credential entity by IDs.
+func (ac *AccountCreate) AddCredentialIDs(ids ...string) *AccountCreate {
+	ac.mutation.AddCredentialIDs(ids...)
+	return ac
+}
+
+// AddCredentials adds the "credentials" edges to the Credential entity.
+func (ac *AccountCreate) AddCredentials(c ...*Credential) *AccountCreate {
+	ids := make([]string, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return ac.AddCredentialIDs(ids...)
 }
 
 // Mutation returns the AccountMutation object of the builder.
@@ -235,6 +251,25 @@ func (ac *AccountCreate) createSpec() (*Account, *sqlgraph.CreateSpec) {
 				IDSpec: &sqlgraph.FieldSpec{
 					Type:   field.TypeString,
 					Column: privatekey.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := ac.mutation.CredentialsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   account.CredentialsTable,
+			Columns: []string{account.CredentialsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeString,
+					Column: credential.FieldID,
 				},
 			},
 		}

@@ -6,7 +6,7 @@ redirect_uri: "http://127.0.0.1:8081/auth/receive_vp"
 vault:
   driverName: "sqlite3"
   dataDir: "/home/jesus/.vault/"
-  dataSourceName: "file:/home/jesus/.vault/vaultdb.sqlite?mode=rwc&cache=shared&_fk=1"
+  dataSourceName: "file:/home/jesus/.siop2/vaultdb.sqlite?mode=rwc&cache=shared&_fk=1"
 
 
 presentation_definition:

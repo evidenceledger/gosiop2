@@ -24,8 +24,8 @@ func init() {
 }
 
 type Vault struct {
-	client *ent.Client
-	ctx    context.Context
+	Client *ent.Client
+	Ctx    context.Context
 }
 
 var mutexForNew sync.Mutex
@@ -39,75 +39,63 @@ func New(driverName string, dataSourceName string) (v *Vault, err error) {
 
 	v = &Vault{}
 
-	v.client, err = ent.Open(driverName, dataSourceName)
+	v.Client, err = ent.Open(driverName, dataSourceName)
 	if err != nil {
 		zlog.Error().Err(err).Msg("failed opening database")
 		return nil, err
 	}
-	v.ctx = context.Background()
+	v.Ctx = context.Background()
 
 	// Run the auto migration tool.
-	if err := v.client.Schema.Create(v.ctx); err != nil {
-		zlog.Error().Err(err).Msg("failed creating schema resources")
+	if err := v.Client.Schema.Create(v.Ctx); err != nil {
+		zlog.Error().Err(err).Str("dataSourceName", dataSourceName).Msg("failed creating schema resources")
 		return nil, err
 	}
 
 	return v, nil
 }
 
-func (v *Vault) CreateAccountWithKey(name string) (*ent.Account, error) {
+func NewFromDBClient(entClient *ent.Client) (v *Vault) {
+
+	v = &Vault{}
+	v.Client = entClient
+	v.Ctx = context.Background()
+
+	return v
+}
+
+func (v *Vault) CreateAccountWithKey(name string) (acc *ent.Account, err error) {
 
 	// Check if the account already exists
-	num := v.client.Account.Query().Where(account.Name(name)).CountX(v.ctx)
+	num := v.Client.Account.Query().Where(account.Name(name)).CountX(v.Ctx)
 	if num > 0 {
 		return nil, fmt.Errorf("account already exists")
 	}
 
-	// Create a new private key.
-	privKey, err := key.NewECDSA()
-	if err != nil {
-		zlog.Error().Err(err).Msg("failed creating new native ECDSA key")
-		return nil, err
-	}
-
-	// Convert to JSON-JWK
-	asJSON, err := privKey.AsJSON()
-	if err != nil {
-		zlog.Error().Err(err).Msg("failed converting key to json")
-		return nil, err
-	}
-
-	// Store in DB
-	kid := privKey.GetKid()
-	dbKey, err := v.client.PrivateKey.
-		Create().
-		SetID(kid).
-		SetKty("EC").
-		SetJwk(asJSON).
-		Save(v.ctx)
-	if err != nil {
-		zlog.Error().Err(err).Msg("failed storing key")
-		return nil, err
-	}
-	zlog.Info().Str("kid", kid).Msg("key created")
-
 	// Create new acount
-	account, err := v.client.Account.
+	acc, err = v.Client.Account.
 		Create().
 		SetName(name).
-		AddKeys(dbKey).
-		Save(v.ctx)
+		Save(v.Ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = v.AddKeyToAccount(name)
+	if err != nil {
+		return nil, err
+	}
 
 	zlog.Info().Str("name", name).Msg("account created")
 
-	return account, nil
+	return acc, nil
 
 }
 
 func (v *Vault) AddKeyToAccount(name string) (*ent.PrivateKey, error) {
 
 	// Get the account
-	acc, err := v.client.Account.Query().Where(account.Name(name)).Only(v.ctx)
+	acc, err := v.Client.Account.Query().Where(account.Name(name)).Only(v.Ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -128,19 +116,20 @@ func (v *Vault) AddKeyToAccount(name string) (*ent.PrivateKey, error) {
 
 	// Store in DB
 	kid := privKey.GetKid()
-	dbKey, err := v.client.PrivateKey.
+	dbKey, err := v.Client.PrivateKey.
 		Create().
 		SetID(kid).
 		SetKty("EC").
 		SetJwk(asJSON).
-		Save(v.ctx)
+		SetAccount(acc).
+		Save(v.Ctx)
 	if err != nil {
 		zlog.Error().Err(err).Msg("failed storing key")
 		return nil, err
 	}
 	zlog.Info().Str("kid", kid).Msg("key created")
 
-	acc.Update().AddKeys(dbKey).Save(v.ctx)
+	acc.Update().AddKeys(dbKey).Save(v.Ctx)
 
 	zlog.Info().Str("name", name).Msg("account updated")
 
@@ -149,12 +138,12 @@ func (v *Vault) AddKeyToAccount(name string) (*ent.PrivateKey, error) {
 }
 
 func (v *Vault) QueryAccount(name string) (acc *ent.Account, err error) {
-	a, err := v.client.Account.
+	a, err := v.Client.Account.
 		Query().
 		Where(account.Name(name)).
 		// `Only` fails if no user found,
 		// or more than 1 user returned.
-		Only(v.ctx)
+		Only(v.Ctx)
 	if _, ok := err.(*ent.NotFoundError); ok {
 		zlog.Debug().Err(err).Str("name", name).Msg("account not found")
 		return nil, err
@@ -168,7 +157,7 @@ func (v *Vault) QueryAccount(name string) (acc *ent.Account, err error) {
 
 }
 
-func (v *Vault) QueryKeysForAccount(name string) (keys []*key.JWK, err error) {
+func (v *Vault) QueryJWKSForAccount(name string) (keys []*key.JWK, err error) {
 
 	acc, err := v.QueryAccount(name)
 	if err != nil {
@@ -176,7 +165,7 @@ func (v *Vault) QueryKeysForAccount(name string) (keys []*key.JWK, err error) {
 		return nil, err
 	}
 
-	entKeys, err := acc.QueryKeys().All(v.ctx)
+	entKeys, err := acc.QueryKeys().All(v.Ctx)
 	if err != nil {
 		zlog.Error().Err(err).Str("name", name).Send()
 		return nil, err
@@ -195,10 +184,10 @@ func (v *Vault) QueryKeysForAccount(name string) (keys []*key.JWK, err error) {
 	return keys, nil
 }
 
-func (v *Vault) QueryKeyByID(id string) (jwk *key.JWK, err error) {
+func (v *Vault) QueryJWKByID(id string) (jwk *key.JWK, err error) {
 
 	// Retrieve key by its ID, which should be unique
-	k, err := v.client.PrivateKey.Get(v.ctx, id)
+	k, err := v.Client.PrivateKey.Get(v.Ctx, id)
 	if err != nil {
 		return nil, err
 	}
@@ -238,7 +227,7 @@ func (v *Vault) SignString(toBeSigned string, alg string, kid string) (signedStr
 	method := jwt.GetSigningMethod(alg)
 
 	// Get the private key for signing
-	jwk, err := v.QueryKeyByID(kid)
+	jwk, err := v.QueryJWKByID(kid)
 	if err != nil {
 		return "", err
 	}
@@ -263,7 +252,7 @@ func (v *Vault) SignString(toBeSigned string, alg string, kid string) (signedStr
 func (v *Vault) VerifySignature(signedString string, signature string, alg string, kid string) (err error) {
 
 	// Get the key for verification
-	jwk, err := v.QueryKeyByID(kid)
+	jwk, err := v.QueryJWKByID(kid)
 	if err != nil {
 		return err
 	}

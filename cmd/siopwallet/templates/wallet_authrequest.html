@@ -37,14 +37,25 @@
     </div>
 
     <div class="w3-container w3-margin w3-center">
-        <p>Authentication Request received</p>
+        <p>Authentication Request received from: {{.Aur.Client_id}}</p>
+        <p>Requesting:
+        {{range .Aur.Presentation_definition.Input_descriptors}}
+            {{.Name}}
+            {{range .Constraints.Fields}}
+                {{.Filter.Pattern}}
+
+            {{end}}
+        
+        {{end}}
+        </p>
+        
         <p>Click the button to send response</p>
         <a href="/sendresponse" class="w3-button w3-black w3-round-large">Send response</a>
     </div>
 
     <div class="w3-container w3-margin">
     <pre><code class="language-json">
-{{.}}
+{{.Raw}}
     </code></pre>
     </div>
 

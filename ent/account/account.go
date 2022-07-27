@@ -19,6 +19,8 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// EdgeKeys holds the string denoting the keys edge name in mutations.
 	EdgeKeys = "keys"
+	// EdgeCredentials holds the string denoting the credentials edge name in mutations.
+	EdgeCredentials = "credentials"
 	// Table holds the table name of the account in the database.
 	Table = "accounts"
 	// KeysTable is the table that holds the keys relation/edge.
@@ -28,6 +30,13 @@ const (
 	KeysInverseTable = "private_keys"
 	// KeysColumn is the table column denoting the keys relation/edge.
 	KeysColumn = "account_keys"
+	// CredentialsTable is the table that holds the credentials relation/edge.
+	CredentialsTable = "credentials"
+	// CredentialsInverseTable is the table name for the Credential entity.
+	// It exists in this package in order to avoid circular dependency with the "credential" package.
+	CredentialsInverseTable = "credentials"
+	// CredentialsColumn is the table column denoting the credentials relation/edge.
+	CredentialsColumn = "account_credentials"
 )
 
 // Columns holds all SQL columns for account fields.

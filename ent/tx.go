@@ -14,8 +14,12 @@ type Tx struct {
 	config
 	// Account is the client for interacting with the Account builders.
 	Account *AccountClient
+	// Credential is the client for interacting with the Credential builders.
+	Credential *CredentialClient
 	// PrivateKey is the client for interacting with the PrivateKey builders.
 	PrivateKey *PrivateKeyClient
+	// PublicKey is the client for interacting with the PublicKey builders.
+	PublicKey *PublicKeyClient
 
 	// lazily loaded.
 	client     *Client
@@ -152,7 +156,9 @@ func (tx *Tx) Client() *Client {
 
 func (tx *Tx) init() {
 	tx.Account = NewAccountClient(tx.config)
+	tx.Credential = NewCredentialClient(tx.config)
 	tx.PrivateKey = NewPrivateKeyClient(tx.config)
+	tx.PublicKey = NewPublicKeyClient(tx.config)
 }
 
 // txDriver wraps the given dialect.Tx with a nop dialect.Driver implementation.

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/evidenceledger/gosiop2/ent/account"
+	"github.com/evidenceledger/gosiop2/ent/credential"
 	"github.com/evidenceledger/gosiop2/ent/predicate"
 	"github.com/evidenceledger/gosiop2/ent/privatekey"
 )
@@ -26,7 +27,8 @@ type AccountQuery struct {
 	fields     []string
 	predicates []predicate.Account
 	// eager-loading edges.
-	withKeys *PrivateKeyQuery
+	withKeys        *PrivateKeyQuery
+	withCredentials *CredentialQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -78,6 +80,28 @@ func (aq *AccountQuery) QueryKeys() *PrivateKeyQuery {
 			sqlgraph.From(account.Table, account.FieldID, selector),
 			sqlgraph.To(privatekey.Table, privatekey.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, account.KeysTable, account.KeysColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCredentials chains the current query on the "credentials" edge.
+func (aq *AccountQuery) QueryCredentials() *CredentialQuery {
+	query := &CredentialQuery{config: aq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := aq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := aq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(account.Table, account.FieldID, selector),
+			sqlgraph.To(credential.Table, credential.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, account.CredentialsTable, account.CredentialsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(aq.driver.Dialect(), step)
 		return fromU, nil
@@ -261,12 +285,13 @@ func (aq *AccountQuery) Clone() *AccountQuery {
 		return nil
 	}
 	return &AccountQuery{
-		config:     aq.config,
-		limit:      aq.limit,
-		offset:     aq.offset,
-		order:      append([]OrderFunc{}, aq.order...),
-		predicates: append([]predicate.Account{}, aq.predicates...),
-		withKeys:   aq.withKeys.Clone(),
+		config:          aq.config,
+		limit:           aq.limit,
+		offset:          aq.offset,
+		order:           append([]OrderFunc{}, aq.order...),
+		predicates:      append([]predicate.Account{}, aq.predicates...),
+		withKeys:        aq.withKeys.Clone(),
+		withCredentials: aq.withCredentials.Clone(),
 		// clone intermediate query.
 		sql:    aq.sql.Clone(),
 		path:   aq.path,
@@ -282,6 +307,17 @@ func (aq *AccountQuery) WithKeys(opts ...func(*PrivateKeyQuery)) *AccountQuery {
 		opt(query)
 	}
 	aq.withKeys = query
+	return aq
+}
+
+// WithCredentials tells the query-builder to eager-load the nodes that are connected to
+// the "credentials" edge. The optional arguments are used to configure the query builder of the edge.
+func (aq *AccountQuery) WithCredentials(opts ...func(*CredentialQuery)) *AccountQuery {
+	query := &CredentialQuery{config: aq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	aq.withCredentials = query
 	return aq
 }
 
@@ -355,8 +391,9 @@ func (aq *AccountQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Acco
 	var (
 		nodes       = []*Account{}
 		_spec       = aq.querySpec()
-		loadedTypes = [1]bool{
+		loadedTypes = [2]bool{
 			aq.withKeys != nil,
+			aq.withCredentials != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]interface{}, error) {
@@ -404,6 +441,35 @@ func (aq *AccountQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Acco
 				return nil, fmt.Errorf(`unexpected foreign-key "account_keys" returned %v for node %v`, *fk, n.ID)
 			}
 			node.Edges.Keys = append(node.Edges.Keys, n)
+		}
+	}
+
+	if query := aq.withCredentials; query != nil {
+		fks := make([]driver.Value, 0, len(nodes))
+		nodeids := make(map[int]*Account)
+		for i := range nodes {
+			fks = append(fks, nodes[i].ID)
+			nodeids[nodes[i].ID] = nodes[i]
+			nodes[i].Edges.Credentials = []*Credential{}
+		}
+		query.withFKs = true
+		query.Where(predicate.Credential(func(s *sql.Selector) {
+			s.Where(sql.InValues(account.CredentialsColumn, fks...))
+		}))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			fk := n.account_credentials
+			if fk == nil {
+				return nil, fmt.Errorf(`foreign-key "account_credentials" is nil for node %v`, n.ID)
+			}
+			node, ok := nodeids[*fk]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "account_credentials" returned %v for node %v`, *fk, n.ID)
+			}
+			node.Edges.Credentials = append(node.Edges.Credentials, n)
 		}
 	}
 

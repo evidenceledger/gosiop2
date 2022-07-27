@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/evidenceledger/gosiop2/ent/account"
 	"github.com/evidenceledger/gosiop2/ent/predicate"
 	"github.com/evidenceledger/gosiop2/ent/privatekey"
 )
@@ -54,20 +55,6 @@ func (pku *PrivateKeyUpdate) ClearAlg() *PrivateKeyUpdate {
 	return pku
 }
 
-// SetPrivate sets the "private" field.
-func (pku *PrivateKeyUpdate) SetPrivate(b bool) *PrivateKeyUpdate {
-	pku.mutation.SetPrivate(b)
-	return pku
-}
-
-// SetNillablePrivate sets the "private" field if the given value is not nil.
-func (pku *PrivateKeyUpdate) SetNillablePrivate(b *bool) *PrivateKeyUpdate {
-	if b != nil {
-		pku.SetPrivate(*b)
-	}
-	return pku
-}
-
 // SetJwk sets the "jwk" field.
 func (pku *PrivateKeyUpdate) SetJwk(u []uint8) *PrivateKeyUpdate {
 	pku.mutation.SetJwk(u)
@@ -88,9 +75,34 @@ func (pku *PrivateKeyUpdate) SetNillableUpdatedAt(t *time.Time) *PrivateKeyUpdat
 	return pku
 }
 
+// SetAccountID sets the "account" edge to the Account entity by ID.
+func (pku *PrivateKeyUpdate) SetAccountID(id int) *PrivateKeyUpdate {
+	pku.mutation.SetAccountID(id)
+	return pku
+}
+
+// SetNillableAccountID sets the "account" edge to the Account entity by ID if the given value is not nil.
+func (pku *PrivateKeyUpdate) SetNillableAccountID(id *int) *PrivateKeyUpdate {
+	if id != nil {
+		pku = pku.SetAccountID(*id)
+	}
+	return pku
+}
+
+// SetAccount sets the "account" edge to the Account entity.
+func (pku *PrivateKeyUpdate) SetAccount(a *Account) *PrivateKeyUpdate {
+	return pku.SetAccountID(a.ID)
+}
+
 // Mutation returns the PrivateKeyMutation object of the builder.
 func (pku *PrivateKeyUpdate) Mutation() *PrivateKeyMutation {
 	return pku.mutation
+}
+
+// ClearAccount clears the "account" edge to the Account entity.
+func (pku *PrivateKeyUpdate) ClearAccount() *PrivateKeyUpdate {
+	pku.mutation.ClearAccount()
+	return pku
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -185,13 +197,6 @@ func (pku *PrivateKeyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Column: privatekey.FieldAlg,
 		})
 	}
-	if value, ok := pku.mutation.Private(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeBool,
-			Value:  value,
-			Column: privatekey.FieldPrivate,
-		})
-	}
 	if value, ok := pku.mutation.Jwk(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeJSON,
@@ -205,6 +210,41 @@ func (pku *PrivateKeyUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Value:  value,
 			Column: privatekey.FieldUpdatedAt,
 		})
+	}
+	if pku.mutation.AccountCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   privatekey.AccountTable,
+			Columns: []string{privatekey.AccountColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: account.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pku.mutation.AccountIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   privatekey.AccountTable,
+			Columns: []string{privatekey.AccountColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: account.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if n, err = sqlgraph.UpdateNodes(ctx, pku.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -251,20 +291,6 @@ func (pkuo *PrivateKeyUpdateOne) ClearAlg() *PrivateKeyUpdateOne {
 	return pkuo
 }
 
-// SetPrivate sets the "private" field.
-func (pkuo *PrivateKeyUpdateOne) SetPrivate(b bool) *PrivateKeyUpdateOne {
-	pkuo.mutation.SetPrivate(b)
-	return pkuo
-}
-
-// SetNillablePrivate sets the "private" field if the given value is not nil.
-func (pkuo *PrivateKeyUpdateOne) SetNillablePrivate(b *bool) *PrivateKeyUpdateOne {
-	if b != nil {
-		pkuo.SetPrivate(*b)
-	}
-	return pkuo
-}
-
 // SetJwk sets the "jwk" field.
 func (pkuo *PrivateKeyUpdateOne) SetJwk(u []uint8) *PrivateKeyUpdateOne {
 	pkuo.mutation.SetJwk(u)
@@ -285,9 +311,34 @@ func (pkuo *PrivateKeyUpdateOne) SetNillableUpdatedAt(t *time.Time) *PrivateKeyU
 	return pkuo
 }
 
+// SetAccountID sets the "account" edge to the Account entity by ID.
+func (pkuo *PrivateKeyUpdateOne) SetAccountID(id int) *PrivateKeyUpdateOne {
+	pkuo.mutation.SetAccountID(id)
+	return pkuo
+}
+
+// SetNillableAccountID sets the "account" edge to the Account entity by ID if the given value is not nil.
+func (pkuo *PrivateKeyUpdateOne) SetNillableAccountID(id *int) *PrivateKeyUpdateOne {
+	if id != nil {
+		pkuo = pkuo.SetAccountID(*id)
+	}
+	return pkuo
+}
+
+// SetAccount sets the "account" edge to the Account entity.
+func (pkuo *PrivateKeyUpdateOne) SetAccount(a *Account) *PrivateKeyUpdateOne {
+	return pkuo.SetAccountID(a.ID)
+}
+
 // Mutation returns the PrivateKeyMutation object of the builder.
 func (pkuo *PrivateKeyUpdateOne) Mutation() *PrivateKeyMutation {
 	return pkuo.mutation
+}
+
+// ClearAccount clears the "account" edge to the Account entity.
+func (pkuo *PrivateKeyUpdateOne) ClearAccount() *PrivateKeyUpdateOne {
+	pkuo.mutation.ClearAccount()
+	return pkuo
 }
 
 // Select allows selecting one or more fields (columns) of the returned entity.
@@ -412,13 +463,6 @@ func (pkuo *PrivateKeyUpdateOne) sqlSave(ctx context.Context) (_node *PrivateKey
 			Column: privatekey.FieldAlg,
 		})
 	}
-	if value, ok := pkuo.mutation.Private(); ok {
-		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
-			Type:   field.TypeBool,
-			Value:  value,
-			Column: privatekey.FieldPrivate,
-		})
-	}
 	if value, ok := pkuo.mutation.Jwk(); ok {
 		_spec.Fields.Set = append(_spec.Fields.Set, &sqlgraph.FieldSpec{
 			Type:   field.TypeJSON,
@@ -432,6 +476,41 @@ func (pkuo *PrivateKeyUpdateOne) sqlSave(ctx context.Context) (_node *PrivateKey
 			Value:  value,
 			Column: privatekey.FieldUpdatedAt,
 		})
+	}
+	if pkuo.mutation.AccountCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   privatekey.AccountTable,
+			Columns: []string{privatekey.AccountColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: account.FieldID,
+				},
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := pkuo.mutation.AccountIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   privatekey.AccountTable,
+			Columns: []string{privatekey.AccountColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: account.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &PrivateKey{config: pkuo.config}
 	_spec.Assign = _node.assignValues

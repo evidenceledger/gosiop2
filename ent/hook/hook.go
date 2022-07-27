@@ -22,6 +22,19 @@ func (f AccountFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return f(ctx, mv)
 }
 
+// The CredentialFunc type is an adapter to allow the use of ordinary
+// function as Credential mutator.
+type CredentialFunc func(context.Context, *ent.CredentialMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CredentialFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.CredentialMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CredentialMutation", m)
+	}
+	return f(ctx, mv)
+}
+
 // The PrivateKeyFunc type is an adapter to allow the use of ordinary
 // function as PrivateKey mutator.
 type PrivateKeyFunc func(context.Context, *ent.PrivateKeyMutation) (ent.Value, error)
@@ -31,6 +44,19 @@ func (f PrivateKeyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 	mv, ok := m.(*ent.PrivateKeyMutation)
 	if !ok {
 		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PrivateKeyMutation", m)
+	}
+	return f(ctx, mv)
+}
+
+// The PublicKeyFunc type is an adapter to allow the use of ordinary
+// function as PublicKey mutator.
+type PublicKeyFunc func(context.Context, *ent.PublicKeyMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PublicKeyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	mv, ok := m.(*ent.PublicKeyMutation)
+	if !ok {
+		return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PublicKeyMutation", m)
 	}
 	return f(ctx, mv)
 }

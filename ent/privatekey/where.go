@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/evidenceledger/gosiop2/ent/predicate"
 )
 
@@ -91,13 +92,6 @@ func Kty(v string) predicate.PrivateKey {
 func Alg(v string) predicate.PrivateKey {
 	return predicate.PrivateKey(func(s *sql.Selector) {
 		s.Where(sql.EQ(s.C(FieldAlg), v))
-	})
-}
-
-// Private applies equality check predicate on the "private" field. It's identical to PrivateEQ.
-func Private(v bool) predicate.PrivateKey {
-	return predicate.PrivateKey(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldPrivate), v))
 	})
 }
 
@@ -351,20 +345,6 @@ func AlgContainsFold(v string) predicate.PrivateKey {
 	})
 }
 
-// PrivateEQ applies the EQ predicate on the "private" field.
-func PrivateEQ(v bool) predicate.PrivateKey {
-	return predicate.PrivateKey(func(s *sql.Selector) {
-		s.Where(sql.EQ(s.C(FieldPrivate), v))
-	})
-}
-
-// PrivateNEQ applies the NEQ predicate on the "private" field.
-func PrivateNEQ(v bool) predicate.PrivateKey {
-	return predicate.PrivateKey(func(s *sql.Selector) {
-		s.Where(sql.NEQ(s.C(FieldPrivate), v))
-	})
-}
-
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.PrivateKey {
 	return predicate.PrivateKey(func(s *sql.Selector) {
@@ -514,6 +494,34 @@ func UpdatedAtLT(v time.Time) predicate.PrivateKey {
 func UpdatedAtLTE(v time.Time) predicate.PrivateKey {
 	return predicate.PrivateKey(func(s *sql.Selector) {
 		s.Where(sql.LTE(s.C(FieldUpdatedAt), v))
+	})
+}
+
+// HasAccount applies the HasEdge predicate on the "account" edge.
+func HasAccount() predicate.PrivateKey {
+	return predicate.PrivateKey(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(AccountTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, AccountTable, AccountColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAccountWith applies the HasEdge predicate on the "account" edge with a given conditions (other predicates).
+func HasAccountWith(preds ...predicate.Account) predicate.PrivateKey {
+	return predicate.PrivateKey(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.To(AccountInverseTable, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, AccountTable, AccountColumn),
+		)
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
 	})
 }
 

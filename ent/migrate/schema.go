@@ -21,12 +21,34 @@ var (
 		Columns:    AccountsColumns,
 		PrimaryKey: []*schema.Column{AccountsColumns[0]},
 	}
+	// CredentialsColumns holds the columns for the "credentials" table.
+	CredentialsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "type", Type: field.TypeString, Default: "jwt_vc"},
+		{Name: "raw", Type: field.TypeJSON},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "account_credentials", Type: field.TypeInt, Nullable: true},
+	}
+	// CredentialsTable holds the schema information for the "credentials" table.
+	CredentialsTable = &schema.Table{
+		Name:       "credentials",
+		Columns:    CredentialsColumns,
+		PrimaryKey: []*schema.Column{CredentialsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "credentials_accounts_credentials",
+				Columns:    []*schema.Column{CredentialsColumns[5]},
+				RefColumns: []*schema.Column{AccountsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+	}
 	// PrivateKeysColumns holds the columns for the "private_keys" table.
 	PrivateKeysColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeString, Unique: true},
 		{Name: "kty", Type: field.TypeString},
 		{Name: "alg", Type: field.TypeString, Nullable: true},
-		{Name: "private", Type: field.TypeBool, Default: false},
 		{Name: "jwk", Type: field.TypeJSON},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
@@ -40,19 +62,37 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "private_keys_accounts_keys",
-				Columns:    []*schema.Column{PrivateKeysColumns[7]},
+				Columns:    []*schema.Column{PrivateKeysColumns[6]},
 				RefColumns: []*schema.Column{AccountsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 		},
 	}
+	// PublicKeysColumns holds the columns for the "public_keys" table.
+	PublicKeysColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeString, Unique: true},
+		{Name: "kty", Type: field.TypeString},
+		{Name: "alg", Type: field.TypeString, Nullable: true},
+		{Name: "jwk", Type: field.TypeJSON},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// PublicKeysTable holds the schema information for the "public_keys" table.
+	PublicKeysTable = &schema.Table{
+		Name:       "public_keys",
+		Columns:    PublicKeysColumns,
+		PrimaryKey: []*schema.Column{PublicKeysColumns[0]},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		AccountsTable,
+		CredentialsTable,
 		PrivateKeysTable,
+		PublicKeysTable,
 	}
 )
 
 func init() {
+	CredentialsTable.ForeignKeys[0].RefTable = AccountsTable
 	PrivateKeysTable.ForeignKeys[0].RefTable = AccountsTable
 }

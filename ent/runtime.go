@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/evidenceledger/gosiop2/ent/account"
+	"github.com/evidenceledger/gosiop2/ent/credential"
 	"github.com/evidenceledger/gosiop2/ent/privatekey"
+	"github.com/evidenceledger/gosiop2/ent/publickey"
 	"github.com/evidenceledger/gosiop2/ent/schema"
 )
 
@@ -28,18 +30,38 @@ func init() {
 	accountDescUpdatedAt := accountFields[2].Descriptor()
 	// account.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	account.DefaultUpdatedAt = accountDescUpdatedAt.Default.(func() time.Time)
+	credentialFields := schema.Credential{}.Fields()
+	_ = credentialFields
+	// credentialDescType is the schema descriptor for type field.
+	credentialDescType := credentialFields[1].Descriptor()
+	// credential.DefaultType holds the default value on creation for the type field.
+	credential.DefaultType = credentialDescType.Default.(string)
+	// credentialDescCreatedAt is the schema descriptor for created_at field.
+	credentialDescCreatedAt := credentialFields[3].Descriptor()
+	// credential.DefaultCreatedAt holds the default value on creation for the created_at field.
+	credential.DefaultCreatedAt = credentialDescCreatedAt.Default.(func() time.Time)
+	// credentialDescUpdatedAt is the schema descriptor for updated_at field.
+	credentialDescUpdatedAt := credentialFields[4].Descriptor()
+	// credential.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	credential.DefaultUpdatedAt = credentialDescUpdatedAt.Default.(func() time.Time)
 	privatekeyFields := schema.PrivateKey{}.Fields()
 	_ = privatekeyFields
-	// privatekeyDescPrivate is the schema descriptor for private field.
-	privatekeyDescPrivate := privatekeyFields[3].Descriptor()
-	// privatekey.DefaultPrivate holds the default value on creation for the private field.
-	privatekey.DefaultPrivate = privatekeyDescPrivate.Default.(bool)
 	// privatekeyDescCreatedAt is the schema descriptor for created_at field.
-	privatekeyDescCreatedAt := privatekeyFields[5].Descriptor()
+	privatekeyDescCreatedAt := privatekeyFields[4].Descriptor()
 	// privatekey.DefaultCreatedAt holds the default value on creation for the created_at field.
 	privatekey.DefaultCreatedAt = privatekeyDescCreatedAt.Default.(func() time.Time)
 	// privatekeyDescUpdatedAt is the schema descriptor for updated_at field.
-	privatekeyDescUpdatedAt := privatekeyFields[6].Descriptor()
+	privatekeyDescUpdatedAt := privatekeyFields[5].Descriptor()
 	// privatekey.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	privatekey.DefaultUpdatedAt = privatekeyDescUpdatedAt.Default.(func() time.Time)
+	publickeyFields := schema.PublicKey{}.Fields()
+	_ = publickeyFields
+	// publickeyDescCreatedAt is the schema descriptor for created_at field.
+	publickeyDescCreatedAt := publickeyFields[4].Descriptor()
+	// publickey.DefaultCreatedAt holds the default value on creation for the created_at field.
+	publickey.DefaultCreatedAt = publickeyDescCreatedAt.Default.(func() time.Time)
+	// publickeyDescUpdatedAt is the schema descriptor for updated_at field.
+	publickeyDescUpdatedAt := publickeyFields[5].Descriptor()
+	// publickey.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	publickey.DefaultUpdatedAt = publickeyDescUpdatedAt.Default.(func() time.Time)
 }

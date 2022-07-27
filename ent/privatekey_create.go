@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/evidenceledger/gosiop2/ent/account"
 	"github.com/evidenceledger/gosiop2/ent/privatekey"
 )
 
@@ -36,20 +37,6 @@ func (pkc *PrivateKeyCreate) SetAlg(s string) *PrivateKeyCreate {
 func (pkc *PrivateKeyCreate) SetNillableAlg(s *string) *PrivateKeyCreate {
 	if s != nil {
 		pkc.SetAlg(*s)
-	}
-	return pkc
-}
-
-// SetPrivate sets the "private" field.
-func (pkc *PrivateKeyCreate) SetPrivate(b bool) *PrivateKeyCreate {
-	pkc.mutation.SetPrivate(b)
-	return pkc
-}
-
-// SetNillablePrivate sets the "private" field if the given value is not nil.
-func (pkc *PrivateKeyCreate) SetNillablePrivate(b *bool) *PrivateKeyCreate {
-	if b != nil {
-		pkc.SetPrivate(*b)
 	}
 	return pkc
 }
@@ -92,6 +79,25 @@ func (pkc *PrivateKeyCreate) SetNillableUpdatedAt(t *time.Time) *PrivateKeyCreat
 func (pkc *PrivateKeyCreate) SetID(s string) *PrivateKeyCreate {
 	pkc.mutation.SetID(s)
 	return pkc
+}
+
+// SetAccountID sets the "account" edge to the Account entity by ID.
+func (pkc *PrivateKeyCreate) SetAccountID(id int) *PrivateKeyCreate {
+	pkc.mutation.SetAccountID(id)
+	return pkc
+}
+
+// SetNillableAccountID sets the "account" edge to the Account entity by ID if the given value is not nil.
+func (pkc *PrivateKeyCreate) SetNillableAccountID(id *int) *PrivateKeyCreate {
+	if id != nil {
+		pkc = pkc.SetAccountID(*id)
+	}
+	return pkc
+}
+
+// SetAccount sets the "account" edge to the Account entity.
+func (pkc *PrivateKeyCreate) SetAccount(a *Account) *PrivateKeyCreate {
+	return pkc.SetAccountID(a.ID)
 }
 
 // Mutation returns the PrivateKeyMutation object of the builder.
@@ -171,10 +177,6 @@ func (pkc *PrivateKeyCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (pkc *PrivateKeyCreate) defaults() {
-	if _, ok := pkc.mutation.Private(); !ok {
-		v := privatekey.DefaultPrivate
-		pkc.mutation.SetPrivate(v)
-	}
 	if _, ok := pkc.mutation.CreatedAt(); !ok {
 		v := privatekey.DefaultCreatedAt()
 		pkc.mutation.SetCreatedAt(v)
@@ -189,9 +191,6 @@ func (pkc *PrivateKeyCreate) defaults() {
 func (pkc *PrivateKeyCreate) check() error {
 	if _, ok := pkc.mutation.Kty(); !ok {
 		return &ValidationError{Name: "kty", err: errors.New(`ent: missing required field "PrivateKey.kty"`)}
-	}
-	if _, ok := pkc.mutation.Private(); !ok {
-		return &ValidationError{Name: "private", err: errors.New(`ent: missing required field "PrivateKey.private"`)}
 	}
 	if _, ok := pkc.mutation.Jwk(); !ok {
 		return &ValidationError{Name: "jwk", err: errors.New(`ent: missing required field "PrivateKey.jwk"`)}
@@ -254,14 +253,6 @@ func (pkc *PrivateKeyCreate) createSpec() (*PrivateKey, *sqlgraph.CreateSpec) {
 		})
 		_node.Alg = value
 	}
-	if value, ok := pkc.mutation.Private(); ok {
-		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
-			Type:   field.TypeBool,
-			Value:  value,
-			Column: privatekey.FieldPrivate,
-		})
-		_node.Private = value
-	}
 	if value, ok := pkc.mutation.Jwk(); ok {
 		_spec.Fields = append(_spec.Fields, &sqlgraph.FieldSpec{
 			Type:   field.TypeJSON,
@@ -285,6 +276,26 @@ func (pkc *PrivateKeyCreate) createSpec() (*PrivateKey, *sqlgraph.CreateSpec) {
 			Column: privatekey.FieldUpdatedAt,
 		})
 		_node.UpdatedAt = value
+	}
+	if nodes := pkc.mutation.AccountIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   privatekey.AccountTable,
+			Columns: []string{privatekey.AccountColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: &sqlgraph.FieldSpec{
+					Type:   field.TypeInt,
+					Column: account.FieldID,
+				},
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.account_keys = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

@@ -11,7 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/evidenceledger/gosiop2/ent/account"
+	"github.com/evidenceledger/gosiop2/ent/credential"
 	"github.com/evidenceledger/gosiop2/ent/privatekey"
+	"github.com/evidenceledger/gosiop2/ent/publickey"
 )
 
 // ent aliases to avoid import conflicts in user's code.
@@ -33,7 +35,9 @@ type OrderFunc func(*sql.Selector)
 func columnChecker(table string) func(string) error {
 	checks := map[string]func(string) bool{
 		account.Table:    account.ValidColumn,
+		credential.Table: credential.ValidColumn,
 		privatekey.Table: privatekey.ValidColumn,
+		publickey.Table:  publickey.ValidColumn,
 	}
 	check, ok := checks[table]
 	if !ok {

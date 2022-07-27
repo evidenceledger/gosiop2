@@ -19,9 +19,8 @@ import (
 	"github.com/evidenceledger/gosiop2/siop/authrequest"
 	"github.com/evidenceledger/gosiop2/siop/authresponse"
 	"github.com/evidenceledger/gosiop2/vault"
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
-	"github.com/labstack/gommon/log"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
 	zlog "github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -30,9 +29,9 @@ import (
 
 func init() {
 	// Initialize the log and its format
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
-	zlog.Logger = zlog.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	zlog.Logger = zlog.With().Caller().Logger()
+	// zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	// zlog.Logger = zlog.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+	// zlog.Logger = zlog.With().Caller().Logger()
 }
 
 type Template struct {
@@ -46,6 +45,7 @@ func (t *Template) Render(w io.Writer, name string, data interface{}, c echo.Con
 type WalletServer struct {
 	cfg         *viper.Viper
 	vault       *vault.Vault
+	credentials *credentials.CredentialStore
 	authRequest *authrequest.AuthenticationRequest
 }
 
@@ -55,13 +55,18 @@ func handleHome(c echo.Context) error {
 	return c.Render(http.StatusOK, "wallethome", "")
 }
 
+type AR_template struct {
+	Raw string
+	Aur *authrequest.AuthenticationRequest
+}
+
 // handleStartSIOP is the HTTP handler for starting the SIOP flow
 // We call the RP and receive an AuthorizationRequest, and display it to the user
 func (w *WalletServer) handleStartSIOP(c echo.Context) (err error) {
 
 	// Call the endpoint in the RP to retrieve the Authentication Request
 	// TODO: use discovery for getting the endpoint
-	startURL := w.cfg.GetString("relyingPartyAddress") + "/startsiop"
+	startURL := w.cfg.GetString("startAuthenticationRequest")
 	err, body := doGET(startURL)
 	if err != nil {
 		zlog.Error().Err(err).Send()
@@ -103,9 +108,14 @@ func (w *WalletServer) handleStartSIOP(c echo.Context) (err error) {
 		return err
 	}
 
+	aur_for_template := &AR_template{
+		Raw: string(out),
+		Aur: aur,
+	}
+
 	// Display Authentication Request to the wallet user
 	// The user can then choose to send the credential(s) to the RP aor not
-	return c.Render(http.StatusOK, "walletauthrequest", string(out))
+	return c.Render(http.StatusOK, "walletauthrequest", aur_for_template)
 }
 
 // handleSendAuthorizationResponse is the HTTP handler for sending the Authentication Response to the RP
@@ -115,7 +125,7 @@ func (w *WalletServer) handleSendAuthorizationResponse(c echo.Context) error {
 	kid := w.cfg.GetString("clientKeyID")
 
 	// Get the Verifiable Presentation (unsigned) with the required VCs inside
-	vp_token, err := credentials.GetCredentials(w.vault)
+	vp_token, err := credentials.GetCredentials("customer", w.vault)
 	if err != nil {
 		return err
 	}
@@ -147,6 +157,19 @@ func (w *WalletServer) handleSendAuthorizationResponse(c echo.Context) error {
 
 	// render the page to the wallet user
 	return c.Render(http.StatusOK, "walletauthresponse", string(out))
+}
+
+func (w *WalletServer) handleAllCredentials(c echo.Context) error {
+
+	creds := w.credentials.GetAllCredentials()
+
+	b, err := json.Marshal(creds)
+	if err != nil {
+		return nil
+	}
+
+	return c.JSONBlob(http.StatusOK, b)
+
 }
 
 // Start is invoked from the CLI and starts a web server for the Relying Party
@@ -190,13 +213,23 @@ func Start(cmd *cobra.Command, args []string) {
 	wallet.cfg = cfg
 	wallet.vault = v
 
+	// Initialize credential store subsystem
+	credentialStoreConfig := cfg.Sub("credentialStore")
+	wallet.credentials, err = credentials.New(credentialStoreConfig)
+	if err != nil {
+		panic(err)
+	}
+
+	// Reset the database
+	wallet.credentials.InitializeDB()
+
 	// Echo instance
 	e := echo.New()
 	e.HideBanner = true
-	e.Logger.SetLevel(log.INFO)
+	//	e.Logger.SetLevel(log.INFO)
 
 	// Serve static files
-	e.Static("/static", "static")
+	e.Static("/", "cmd/siopwallet/www")
 
 	// Precompile templates
 	t := &Template{
@@ -206,15 +239,34 @@ func Start(cmd *cobra.Command, args []string) {
 	e.Renderer = t
 
 	// Middleware
-	e.Use(middleware.Logger())
+	//	e.Use(middleware.Logger())
+	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+	logger := zerolog.New(os.Stdout).With().Caller().Logger()
+	logger = logger.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
+	e.Use(middleware.RequestLoggerWithConfig(middleware.RequestLoggerConfig{
+		LogURI:    true,
+		LogStatus: true,
+		LogValuesFunc: func(c echo.Context, v middleware.RequestLoggerValues) error {
+			logger.Info().Timestamp().
+				Str("URI", v.URI).
+				Int("status", v.Status).
+				Msg("request")
+
+			return nil
+		},
+	}))
+
 	e.Use(middleware.BodyLimit("1M"))
 	e.Use(middleware.Secure())
+	e.Use(middleware.CORS())
 	e.Use(middleware.Recover())
 
 	// Setup the routes
-	e.GET("/", handleHome)
+	// e.GET("/", handleHome)
 	e.GET("/startsiop", wallet.handleStartSIOP)
 	e.GET("/sendresponse", wallet.handleSendAuthorizationResponse)
+	e.GET("/api/allcredentials", wallet.handleAllCredentials)
 
 	e.Logger.Info("SIOP server starting")
 

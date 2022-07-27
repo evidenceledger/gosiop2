@@ -11,15 +11,6 @@ import (
 	"github.com/evidenceledger/gosiop2/siop"
 )
 
-type Claims struct {
-	IDToken `json:"id_token" mapstructure:"id_token"`
-	VPToken `json:"vp_token" mapstructure:"vp_token"`
-}
-
-type IDToken struct {
-	Email string `json:"email"`
-}
-
 type VPToken struct {
 	Presentation_definition PresentationDefinition `json:"presentation_definition" mapstructure:"presentation_definition"`
 }

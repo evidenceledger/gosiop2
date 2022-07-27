@@ -21,7 +21,7 @@ func init() {
 
 type MenuItem struct {
 	Title  string
-	Action func(...any) error
+	Action HandlerFunc
 }
 
 type Menu struct {
@@ -31,6 +31,17 @@ type Menu struct {
 	MenuItems     []MenuItem
 	PromptOptions []survey.AskOpt
 	parentMenu    *Menu
+}
+
+// The HandlerFunc type is an adapter to allow the use of
+// ordinary functions as Menu handlers. If f is a function
+// with the appropriate signature, HandlerFunc(f) is a
+// Handler that calls f.
+type HandlerFunc func(...any) error
+
+// ServeHTTP calls f(w, r).
+func (f HandlerFunc) CallF(values ...any) error {
+	return f(values...)
 }
 
 // ValidMenuOption requires a valid number or the empty string (pressing Enter)
@@ -50,7 +61,7 @@ func ValidMenuOption(length int) survey.Validator {
 		// Try to convert to an integer
 		sel, err := strconv.Atoi(str)
 		if err != nil {
-			return fmt.Errorf("must be a number be between 1 to %v and you entered %v", length, str)
+			return fmt.Errorf("must be a number between 1 to %v and you entered <%v>", length, str)
 		}
 		if sel <= 0 || sel > length {
 			return fmt.Errorf("must be a number be between 1 to %v", length)
@@ -78,7 +89,7 @@ func (m *Menu) PrintMenu(values ...any) error {
 		}
 		pterm.Println()
 
-		// Wait for selected
+		// Wait for selected option
 		selected := ""
 
 		prompt := &survey.Input{
@@ -106,7 +117,7 @@ func (m *Menu) PrintMenu(values ...any) error {
 
 		sel, _ := strconv.Atoi(selected)
 		m.MenuItems[sel-1].Action(values...)
-		WaitAnyKey()
+		//WaitAnyKey()
 
 	}
 

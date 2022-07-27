@@ -31,5 +31,6 @@ func (Account) Fields() []ent.Field {
 func (Account) Edges() []ent.Edge {
 	return []ent.Edge{
 		edge.To("keys", PrivateKey.Type),
+		edge.To("credentials", Credential.Type),
 	}
 }

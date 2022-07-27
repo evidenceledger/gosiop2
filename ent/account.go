@@ -31,9 +31,11 @@ type Account struct {
 type AccountEdges struct {
 	// Keys holds the value of the keys edge.
 	Keys []*PrivateKey `json:"keys,omitempty"`
+	// Credentials holds the value of the credentials edge.
+	Credentials []*Credential `json:"credentials,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // KeysOrErr returns the Keys value or an error if the edge
@@ -43,6 +45,15 @@ func (e AccountEdges) KeysOrErr() ([]*PrivateKey, error) {
 		return e.Keys, nil
 	}
 	return nil, &NotLoadedError{edge: "keys"}
+}
+
+// CredentialsOrErr returns the Credentials value or an error if the edge
+// was not loaded in eager-loading.
+func (e AccountEdges) CredentialsOrErr() ([]*Credential, error) {
+	if e.loadedTypes[1] {
+		return e.Credentials, nil
+	}
+	return nil, &NotLoadedError{edge: "credentials"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -103,6 +114,11 @@ func (a *Account) assignValues(columns []string, values []interface{}) error {
 // QueryKeys queries the "keys" edge of the Account entity.
 func (a *Account) QueryKeys() *PrivateKeyQuery {
 	return (&AccountClient{config: a.config}).QueryKeys(a)
+}
+
+// QueryCredentials queries the "credentials" edge of the Account entity.
+func (a *Account) QueryCredentials() *CredentialQuery {
+	return (&AccountClient{config: a.config}).QueryCredentials(a)
 }
 
 // Update returns a builder for updating this Account.

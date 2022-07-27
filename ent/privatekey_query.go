@@ -10,6 +10,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
+	"github.com/evidenceledger/gosiop2/ent/account"
 	"github.com/evidenceledger/gosiop2/ent/predicate"
 	"github.com/evidenceledger/gosiop2/ent/privatekey"
 )
@@ -23,7 +24,9 @@ type PrivateKeyQuery struct {
 	order      []OrderFunc
 	fields     []string
 	predicates []predicate.PrivateKey
-	withFKs    bool
+	// eager-loading edges.
+	withAccount *AccountQuery
+	withFKs     bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -58,6 +61,28 @@ func (pkq *PrivateKeyQuery) Unique(unique bool) *PrivateKeyQuery {
 func (pkq *PrivateKeyQuery) Order(o ...OrderFunc) *PrivateKeyQuery {
 	pkq.order = append(pkq.order, o...)
 	return pkq
+}
+
+// QueryAccount chains the current query on the "account" edge.
+func (pkq *PrivateKeyQuery) QueryAccount() *AccountQuery {
+	query := &AccountQuery{config: pkq.config}
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := pkq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := pkq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(privatekey.Table, privatekey.FieldID, selector),
+			sqlgraph.To(account.Table, account.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, privatekey.AccountTable, privatekey.AccountColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(pkq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first PrivateKey entity from the query.
@@ -236,16 +261,28 @@ func (pkq *PrivateKeyQuery) Clone() *PrivateKeyQuery {
 		return nil
 	}
 	return &PrivateKeyQuery{
-		config:     pkq.config,
-		limit:      pkq.limit,
-		offset:     pkq.offset,
-		order:      append([]OrderFunc{}, pkq.order...),
-		predicates: append([]predicate.PrivateKey{}, pkq.predicates...),
+		config:      pkq.config,
+		limit:       pkq.limit,
+		offset:      pkq.offset,
+		order:       append([]OrderFunc{}, pkq.order...),
+		predicates:  append([]predicate.PrivateKey{}, pkq.predicates...),
+		withAccount: pkq.withAccount.Clone(),
 		// clone intermediate query.
 		sql:    pkq.sql.Clone(),
 		path:   pkq.path,
 		unique: pkq.unique,
 	}
+}
+
+// WithAccount tells the query-builder to eager-load the nodes that are connected to
+// the "account" edge. The optional arguments are used to configure the query builder of the edge.
+func (pkq *PrivateKeyQuery) WithAccount(opts ...func(*AccountQuery)) *PrivateKeyQuery {
+	query := &AccountQuery{config: pkq.config}
+	for _, opt := range opts {
+		opt(query)
+	}
+	pkq.withAccount = query
+	return pkq
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -316,10 +353,16 @@ func (pkq *PrivateKeyQuery) prepareQuery(ctx context.Context) error {
 
 func (pkq *PrivateKeyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*PrivateKey, error) {
 	var (
-		nodes   = []*PrivateKey{}
-		withFKs = pkq.withFKs
-		_spec   = pkq.querySpec()
+		nodes       = []*PrivateKey{}
+		withFKs     = pkq.withFKs
+		_spec       = pkq.querySpec()
+		loadedTypes = [1]bool{
+			pkq.withAccount != nil,
+		}
 	)
+	if pkq.withAccount != nil {
+		withFKs = true
+	}
 	if withFKs {
 		_spec.Node.Columns = append(_spec.Node.Columns, privatekey.ForeignKeys...)
 	}
@@ -329,6 +372,7 @@ func (pkq *PrivateKeyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	_spec.Assign = func(columns []string, values []interface{}) error {
 		node := &PrivateKey{config: pkq.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	for i := range hooks {
@@ -340,6 +384,36 @@ func (pkq *PrivateKeyQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+
+	if query := pkq.withAccount; query != nil {
+		ids := make([]int, 0, len(nodes))
+		nodeids := make(map[int][]*PrivateKey)
+		for i := range nodes {
+			if nodes[i].account_keys == nil {
+				continue
+			}
+			fk := *nodes[i].account_keys
+			if _, ok := nodeids[fk]; !ok {
+				ids = append(ids, fk)
+			}
+			nodeids[fk] = append(nodeids[fk], nodes[i])
+		}
+		query.Where(account.IDIn(ids...))
+		neighbors, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, n := range neighbors {
+			nodes, ok := nodeids[n.ID]
+			if !ok {
+				return nil, fmt.Errorf(`unexpected foreign-key "account_keys" returned %v`, n.ID)
+			}
+			for i := range nodes {
+				nodes[i].Edges.Account = n
+			}
+		}
+	}
+
 	return nodes, nil
 }
 

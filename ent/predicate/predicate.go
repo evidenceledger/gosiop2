@@ -9,5 +9,11 @@ import (
 // Account is the predicate function for account builders.
 type Account func(*sql.Selector)
 
+// Credential is the predicate function for credential builders.
+type Credential func(*sql.Selector)
+
 // PrivateKey is the predicate function for privatekey builders.
 type PrivateKey func(*sql.Selector)
+
+// PublicKey is the predicate function for publickey builders.
+type PublicKey func(*sql.Selector)

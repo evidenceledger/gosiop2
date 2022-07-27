@@ -15,16 +15,23 @@ const (
 	FieldKty = "kty"
 	// FieldAlg holds the string denoting the alg field in the database.
 	FieldAlg = "alg"
-	// FieldPrivate holds the string denoting the private field in the database.
-	FieldPrivate = "private"
 	// FieldJwk holds the string denoting the jwk field in the database.
 	FieldJwk = "jwk"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// EdgeAccount holds the string denoting the account edge name in mutations.
+	EdgeAccount = "account"
 	// Table holds the table name of the privatekey in the database.
 	Table = "private_keys"
+	// AccountTable is the table that holds the account relation/edge.
+	AccountTable = "private_keys"
+	// AccountInverseTable is the table name for the Account entity.
+	// It exists in this package in order to avoid circular dependency with the "account" package.
+	AccountInverseTable = "accounts"
+	// AccountColumn is the table column denoting the account relation/edge.
+	AccountColumn = "account_keys"
 )
 
 // Columns holds all SQL columns for privatekey fields.
@@ -32,7 +39,6 @@ var Columns = []string{
 	FieldID,
 	FieldKty,
 	FieldAlg,
-	FieldPrivate,
 	FieldJwk,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -60,8 +66,6 @@ func ValidColumn(column string) bool {
 }
 
 var (
-	// DefaultPrivate holds the default value on creation for the "private" field.
-	DefaultPrivate bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.

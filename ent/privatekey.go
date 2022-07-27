@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"github.com/evidenceledger/gosiop2/ent/account"
 	"github.com/evidenceledger/gosiop2/ent/privatekey"
 )
 
@@ -21,15 +22,39 @@ type PrivateKey struct {
 	Kty string `json:"kty,omitempty"`
 	// Alg holds the value of the "alg" field.
 	Alg string `json:"alg,omitempty"`
-	// Private holds the value of the "private" field.
-	Private bool `json:"private,omitempty"`
 	// Jwk holds the value of the "jwk" field.
 	Jwk []uint8 `json:"jwk,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// UpdatedAt holds the value of the "updated_at" field.
-	UpdatedAt    time.Time `json:"updated_at,omitempty"`
+	UpdatedAt time.Time `json:"updated_at,omitempty"`
+	// Edges holds the relations/edges for other nodes in the graph.
+	// The values are being populated by the PrivateKeyQuery when eager-loading is set.
+	Edges        PrivateKeyEdges `json:"edges"`
 	account_keys *int
+}
+
+// PrivateKeyEdges holds the relations/edges for other nodes in the graph.
+type PrivateKeyEdges struct {
+	// Account holds the value of the account edge.
+	Account *Account `json:"account,omitempty"`
+	// loadedTypes holds the information for reporting if a
+	// type was loaded (or requested) in eager-loading or not.
+	loadedTypes [1]bool
+}
+
+// AccountOrErr returns the Account value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PrivateKeyEdges) AccountOrErr() (*Account, error) {
+	if e.loadedTypes[0] {
+		if e.Account == nil {
+			// The edge account was loaded in eager-loading,
+			// but was not found.
+			return nil, &NotFoundError{label: account.Label}
+		}
+		return e.Account, nil
+	}
+	return nil, &NotLoadedError{edge: "account"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -39,8 +64,6 @@ func (*PrivateKey) scanValues(columns []string) ([]interface{}, error) {
 		switch columns[i] {
 		case privatekey.FieldJwk:
 			values[i] = new([]byte)
-		case privatekey.FieldPrivate:
-			values[i] = new(sql.NullBool)
 		case privatekey.FieldID, privatekey.FieldKty, privatekey.FieldAlg:
 			values[i] = new(sql.NullString)
 		case privatekey.FieldCreatedAt, privatekey.FieldUpdatedAt:
@@ -80,12 +103,6 @@ func (pk *PrivateKey) assignValues(columns []string, values []interface{}) error
 			} else if value.Valid {
 				pk.Alg = value.String
 			}
-		case privatekey.FieldPrivate:
-			if value, ok := values[i].(*sql.NullBool); !ok {
-				return fmt.Errorf("unexpected type %T for field private", values[i])
-			} else if value.Valid {
-				pk.Private = value.Bool
-			}
 		case privatekey.FieldJwk:
 			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field jwk", values[i])
@@ -118,6 +135,11 @@ func (pk *PrivateKey) assignValues(columns []string, values []interface{}) error
 	return nil
 }
 
+// QueryAccount queries the "account" edge of the PrivateKey entity.
+func (pk *PrivateKey) QueryAccount() *AccountQuery {
+	return (&PrivateKeyClient{config: pk.config}).QueryAccount(pk)
+}
+
 // Update returns a builder for updating this PrivateKey.
 // Note that you need to call PrivateKey.Unwrap() before calling this method if this PrivateKey
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -146,9 +168,6 @@ func (pk *PrivateKey) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("alg=")
 	builder.WriteString(pk.Alg)
-	builder.WriteString(", ")
-	builder.WriteString("private=")
-	builder.WriteString(fmt.Sprintf("%v", pk.Private))
 	builder.WriteString(", ")
 	builder.WriteString("jwk=")
 	builder.WriteString(fmt.Sprintf("%v", pk.Jwk))

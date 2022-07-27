@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"entgo.io/ent"
+	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 )
 
@@ -18,7 +19,6 @@ func (PrivateKey) Fields() []ent.Field {
 		field.String("id").Unique().Immutable(),
 		field.String("kty"),
 		field.String("alg").Optional(),
-		field.Bool("private").Default(false),
 		field.JSON("jwk", []byte{}),
 		field.Time("created_at").
 			Default(time.Now).
@@ -30,5 +30,9 @@ func (PrivateKey) Fields() []ent.Field {
 
 // Edges of the PrivateKeys.
 func (PrivateKey) Edges() []ent.Edge {
-	return nil
+	return []ent.Edge{
+		edge.From("account", Account.Type).
+			Ref("keys").
+			Unique(),
+	}
 }
