@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/evidenceledger/gosiop2/ent"
-	"github.com/evidenceledger/gosiop2/menusystem"
+	"github.com/evidenceledger/gosiop2/internal/menusystem"
 	"github.com/evidenceledger/gosiop2/vault"
 	"github.com/pterm/pterm"
 )

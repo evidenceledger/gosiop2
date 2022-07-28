@@ -2,11 +2,11 @@
 Copyright © 2022 Jesus Ruiz <hesus.ruiz@gmail.com>
 
 */
-package cmd
+package main
 
 import (
-	"github.com/evidenceledger/gosiop2/cmd/rpserver"
-	"github.com/evidenceledger/gosiop2/cmd/siopwallet"
+	"github.com/evidenceledger/gosiop2/cmd/siop/rpserver"
+	"github.com/evidenceledger/gosiop2/cmd/siop/siopwallet"
 	"github.com/spf13/cobra"
 )
 

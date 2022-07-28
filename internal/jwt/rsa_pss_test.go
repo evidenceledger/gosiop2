@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/evidenceledger/gosiop2/jwt"
-	"github.com/evidenceledger/gosiop2/jwt/test"
+	"github.com/evidenceledger/gosiop2/internal/jwt"
+	"github.com/evidenceledger/gosiop2/internal/jwt/test"
 )
 
 var rsaPSSTestData = []struct {

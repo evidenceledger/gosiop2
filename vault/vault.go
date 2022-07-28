@@ -9,7 +9,7 @@ import (
 
 	"github.com/evidenceledger/gosiop2/ent"
 	"github.com/evidenceledger/gosiop2/ent/account"
-	"github.com/evidenceledger/gosiop2/jwt"
+	"github.com/evidenceledger/gosiop2/internal/jwt"
 	"github.com/evidenceledger/gosiop2/vault/key"
 
 	_ "github.com/mattn/go-sqlite3"

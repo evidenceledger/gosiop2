@@ -1,8 +1,17 @@
 clientID: "did:uuid:09b8a75c-6e8a-4992-ad47-362311595ec5"
 clientKeyID: "3e639b48-d904-4584-8b2d-05303e584159"
-listenAddress: "127.0.0.1:8080"
 relyingPartyAddress: "http://127.0.0.1:8081"
 startAuthenticationRequest: "http://127.0.0.1:8081/startsiop"
+
+registration:
+  subject_syntax_types_supported:
+  - "did:peer"
+  - "did:elsi"
+  - "did:ebsi"
+
+server:
+  listenAddress: "127.0.0.1:8080"
+  templateDir: "./cmd/siop/siopwallet/templates"
 
 vault:
   driverName: "sqlite3"
@@ -12,10 +21,3 @@ credentialStore:
   db:
     driverName: "sqlite3"
     dataSourceName: "file:/home/jesus/.siop2/vaultdb.sqlite?mode=rwc&cache=shared&_fk=1"
-
-
-registration:
-  subject_syntax_types_supported:
-  - "did:peer"
-  - "did:elsi"
-  - "did:ebsi"

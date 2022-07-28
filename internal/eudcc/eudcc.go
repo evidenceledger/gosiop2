@@ -11,7 +11,7 @@ import (
 
 	"github.com/adrianrudnik/base45-go"
 
-	"github.com/evidenceledger/gosiop2/jwt"
+	"github.com/evidenceledger/gosiop2/internal/jwt"
 )
 
 //var eudcc EUDCC

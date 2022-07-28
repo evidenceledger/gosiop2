@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/evidenceledger/gosiop2/jwt"
+	"github.com/evidenceledger/gosiop2/internal/jwt"
 )
 
 // Example (atypical) using the RegisteredClaims type by itself to parse a token.

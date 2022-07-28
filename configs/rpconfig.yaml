@@ -1,13 +1,6 @@
 clientID: "did:elsi:packetdeliveryco"
 clientKeyID: "e3f8da57-b305-42ea-a200-0928b1cb38b6"
-listenAddress: "127.0.0.1:8081"
 redirect_uri: "http://127.0.0.1:8081/auth/receive_vp"
-
-vault:
-  driverName: "sqlite3"
-  dataDir: "/home/jesus/.vault/"
-  dataSourceName: "file:/home/jesus/.siop2/vaultdb.sqlite?mode=rwc&cache=shared&_fk=1"
-
 
 presentation_definition:
   id: "customer_credentials"
@@ -37,3 +30,12 @@ registration:
   - "did:peer"
   - "did:elsi"
   - "did:ebsi"
+
+vault:
+  driverName: "sqlite3"
+  dataDir: "/home/jesus/.vault/"
+  dataSourceName: "file:/home/jesus/.siop2/vaultdb.sqlite?mode=rwc&cache=shared&_fk=1"
+
+server:
+  listenAddress: "127.0.0.1:8081"
+  templateDir: "./cmd/siop/rpserver/templates"

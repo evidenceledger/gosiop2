@@ -13,9 +13,10 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path"
 	"time"
 
-	"github.com/evidenceledger/gosiop2/jwt"
+	"github.com/evidenceledger/gosiop2/internal/jwt"
 	"github.com/evidenceledger/gosiop2/siop"
 	"github.com/evidenceledger/gosiop2/siop/authrequest"
 	"github.com/evidenceledger/gosiop2/siop/authresponse"
@@ -174,8 +175,9 @@ func Start(cmd *cobra.Command, args []string) {
 	cfg := viper.New()
 	cfg.SetConfigName("rpconfig.yaml")
 	cfg.SetConfigType("yaml")
-	cfg.AddConfigPath("$HOME/.config/rpserver")
 	cfg.AddConfigPath(".")
+	cfg.AddConfigPath("./configs")
+	cfg.AddConfigPath("$HOME/.config/rpserver")
 
 	// Read the configuration values
 	err := cfg.ReadInConfig()
@@ -214,7 +216,7 @@ func Start(cmd *cobra.Command, args []string) {
 
 	// Precompile templates
 	t := &Template{
-		templates: template.Must(template.ParseGlob("cmd/rpserver/templates/*.html")),
+		templates: template.Must(template.ParseGlob(path.Join(cfg.GetString("server.templateDir"), "*.html"))),
 	}
 	// register middleware to render templates
 	e.Renderer = t
@@ -261,7 +263,7 @@ func Start(cmd *cobra.Command, args []string) {
 	e.Logger.Info("SIOP server starting")
 
 	// Start server and block forever
-	err = e.Start(cfg.GetString("listenAddress"))
+	err = e.Start(cfg.GetString("server.listenAddress"))
 
 	// Should never reach here unless some fatal error happened
 	if err != nil {

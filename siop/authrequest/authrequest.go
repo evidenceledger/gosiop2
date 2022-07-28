@@ -7,7 +7,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/evidenceledger/gosiop2/jwt"
+	"github.com/evidenceledger/gosiop2/internal/jwt"
 	"github.com/evidenceledger/gosiop2/siop"
 )
 

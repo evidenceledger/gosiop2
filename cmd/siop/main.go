@@ -7,7 +7,6 @@ package main
 import (
 	"os"
 
-	"github.com/evidenceledger/gosiop2/cmd"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 )
@@ -19,5 +18,5 @@ func init() {
 }
 
 func main() {
-	cmd.Execute()
+	Execute()
 }

@@ -2,7 +2,7 @@
 Copyright © 2022 Jesus Ruiz <hesus.ruiz@gmail.com>
 
 */
-package cmd
+package main
 
 import (
 	"github.com/evidenceledger/gosiop2/cmd/adminmenu"

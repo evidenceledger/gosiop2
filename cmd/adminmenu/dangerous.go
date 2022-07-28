@@ -1,7 +1,7 @@
 package adminmenu
 
 import (
-	"github.com/evidenceledger/gosiop2/menusystem"
+	"github.com/evidenceledger/gosiop2/internal/menusystem"
 	"github.com/pterm/pterm"
 )
 

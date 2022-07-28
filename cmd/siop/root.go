@@ -2,7 +2,7 @@
 Copyright © 2022 Jesus Ruiz <hesus.ruiz@gmail.com>
 
 */
-package cmd
+package main
 
 import (
 	"os"
@@ -39,5 +39,5 @@ func init() {
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	//rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

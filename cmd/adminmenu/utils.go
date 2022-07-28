@@ -3,7 +3,7 @@ package adminmenu
 import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/evidenceledger/gosiop2/credentials"
-	"github.com/evidenceledger/gosiop2/menusystem"
+	"github.com/evidenceledger/gosiop2/internal/menusystem"
 	"github.com/evidenceledger/gosiop2/vault"
 	"github.com/pterm/pterm"
 	"github.com/rs/zerolog/log"

@@ -8,7 +8,7 @@ import (
 	"github.com/evidenceledger/gosiop2/ent"
 	"github.com/evidenceledger/gosiop2/ent/account"
 	"github.com/evidenceledger/gosiop2/ent/credential"
-	"github.com/evidenceledger/gosiop2/menusystem"
+	"github.com/evidenceledger/gosiop2/internal/menusystem"
 	"github.com/evidenceledger/gosiop2/vault"
 	"github.com/pterm/pterm"
 	zlog "github.com/rs/zerolog/log"
