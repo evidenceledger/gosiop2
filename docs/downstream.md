@@ -50,3 +50,5 @@ In particular, the VC includes a `roles` claim in the `credentialSubject` object
   }
 }
 ```
+
+The API is an HTTP GET request with the VC in the request body as a JWT. Depending on the trust between the SIOP gateway and the component implementing the API, the API could be authenticated and transported over HTTPS or be just a local API call between two local processess.
