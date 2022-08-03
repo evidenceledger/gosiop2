@@ -1,4 +1,4 @@
-{{define "customervp"}}
+{{define "employeecopy"}}
 {
     "iss": "{{.IssuerDID}}",
     "sub": "{{.SubjectDID}}",
@@ -8,12 +8,12 @@
     "vc": {
         "@context": [
             "https://www.w3.org/2018/credentials/v1",
-            "https://marketplace.i4trust.fiware.io/2022/credentials/customer/v1"
+            "https://marketplace.i4trust.fiware.io/2022/credentials/employee/v1"
         ],
         "id": "https://pdc.i4trust.fiware.io/credentials/1872",
-        "type": ["VerifiableCredential", "CustomerCredential"],
+        "type": ["VerifiableCredential", "EmployeeCredential"],
         "issuer": {
-            "id": "did:elsi:EU.EORI.NLHAPPYPETS"
+            "id": "did:elsi:EU.EORI.NLPACKETDEL"
         },
         "issuanceDate": "2022-03-22T14:00:00Z",
         "validFrom": "2022-03-22T14:00:00Z",
@@ -36,8 +36,8 @@
             ],
             "roles": [
                 {
-                    "target": "did:elsi:EU.EORI.NLPACKETDEL",
-                    "names": ["GoldCustomer"]
+                    "target": "did:elsi:EU.EORI.NLMARKETPLA",
+                    "names": ["seller", "buyer"]
                 }
             ],
             "name": "{{.Name}}",

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"strings"
 	"time"
+
+	"github.com/evidenceledger/gosiop2/siop"
 )
 
 // DecodePaddingAllowed will switch the codec used for decoding JWTs respectively. Note that the JWS RFC7515
@@ -32,6 +34,7 @@ type Token struct {
 	Method           SigningMethod          // The signing method used or to be used
 	Header           map[string]interface{} // The first segment of the token
 	Claims           Claims                 // The second segment of the token
+	ClaimBytes       []byte
 	ToBeSignedString string
 	Signature        string // The third segment of the token.  Populated when you Parse a token
 	Valid            bool   // Is the token valid?  Populated when you Parse/Verify a token
@@ -130,4 +133,62 @@ func DecodeSegment(seg string) ([]byte, error) {
 	}
 
 	return base64.RawURLEncoding.DecodeString(seg)
+}
+
+type TokenNG struct {
+	Raw        []byte        // The raw token.  Populated when you Parse a token
+	Method     SigningMethod // The signing method used or to be used
+	Header     HeaderNG
+	Claims     Claims // The second segment of the token
+	ClaimBytes []byte
+	Signature  []byte // The third segment of the token.  Populated when you Parse a token
+}
+
+type HeaderNG struct {
+	Alg string `json:"alg"`
+	Kid string `json:"kid"`
+	Typ string `json:"typ"`
+}
+
+func NewTokenNGWithClaims() *TokenNG {
+	t := &TokenNG{}
+	t.Header = *NewHeader()
+	return t
+}
+
+func NewHeader() *HeaderNG {
+	h := &HeaderNG{
+		Typ: "JWT",
+		Alg: siop.DefaultPreferredAlgorithm,
+	}
+	// The field "kid" is compulsory but will be specified when signing
+
+	return h
+}
+
+func (h *HeaderNG) Serialize() []byte {
+
+	// Convert to JSON and encode in B64Url
+	hs, _ := json.Marshal(h)
+
+	buf := make([]byte, base64.RawURLEncoding.EncodedLen(len(hs)))
+	base64.RawURLEncoding.Encode(buf, hs)
+	return buf
+
+}
+
+func ParseHeaderSerialized(hs []byte) (h *HeaderNG, err error) {
+
+	// Decode from B64Url and create the struct
+	dbuf := make([]byte, base64.RawURLEncoding.DecodedLen(len(hs)))
+	n, err := base64.RawURLEncoding.Decode(dbuf, hs)
+	if err != nil {
+		return nil, err
+	}
+	dbuf = dbuf[:n]
+
+	err = json.Unmarshal(dbuf, h)
+
+	return h, err
+
 }

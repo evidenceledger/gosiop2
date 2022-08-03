@@ -182,7 +182,9 @@ func (p *Parser) ParseUnverified2(tokenString string, claims Claims) (token *Tok
 	}
 
 	// Initialize the Token struct
-	token = &Token{Raw: tokenString}
+	token = &Token{
+		Raw: tokenString,
+	}
 
 	// Parse Header
 	var headerBytes []byte
@@ -210,13 +212,12 @@ func (p *Parser) ParseUnverified2(tokenString string, claims Claims) (token *Tok
 	token.Header["kid"] = kid
 
 	// Decode claims part from B64Url
-	var claimBytes []byte
-	if claimBytes, err = DecodeSegment(parts[1]); err != nil {
+	if token.ClaimBytes, err = DecodeSegment(parts[1]); err != nil {
 		return nil, &ValidationError{Inner: err, Errors: ValidationErrorMalformed}
 	}
 
 	// JSON Decode, decoding to Number instead of floats
-	dec := json.NewDecoder(bytes.NewBuffer(claimBytes))
+	dec := json.NewDecoder(bytes.NewBuffer(token.ClaimBytes))
 	dec.UseNumber()
 
 	err = dec.Decode(&claims)

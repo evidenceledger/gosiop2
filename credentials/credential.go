@@ -8,7 +8,10 @@ import (
 	"sync"
 	"text/template"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/evidenceledger/gosiop2/ent"
+	"github.com/evidenceledger/gosiop2/internal/gyaml"
+	"github.com/evidenceledger/gosiop2/internal/jwt"
 	"github.com/evidenceledger/gosiop2/vault"
 	"github.com/google/uuid"
 	zlog "github.com/rs/zerolog/log"
@@ -56,12 +59,20 @@ var credentialExamples = []*CredentialData{
 var t *template.Template
 
 func init() {
-	t = template.Must(template.ParseGlob("credentials/templates/*.tpl"))
+
+	myfuncs := make(template.FuncMap, 10)
+	myfuncs["saludaA"] = saludaA
+	t = template.Must(template.New("base").Funcs(myfuncs).Funcs(sprig.TxtFuncMap()).ParseGlob("/home/jesus/gosrc/gosiop2/credentials/templates/*.tpl"))
+
 }
 
 type CredentialStore struct {
 	Client *ent.Client
 	Ctx    context.Context
+}
+
+func saludaA(in string) string {
+	return "Hola que tal estas " + in
 }
 
 var mutexForNew sync.Mutex
@@ -234,7 +245,7 @@ func (c *CredentialStore) CreateCredentialFromMap(credData map[string]string) (r
 
 	// Check if the issuer has already an account
 	v := vault.NewFromDBClient(c.Client)
-	acc, err := v.QueryAccount(credData["IssuerDID"])
+	acc, err := v.QueryAccount(credData["issuerDID"])
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +266,7 @@ func (c *CredentialStore) CreateCredentialFromMap(credData map[string]string) (r
 
 	// Generate the credential from the template
 	var b bytes.Buffer
-	err = t.ExecuteTemplate(&b, credData["CredName"], credData)
+	err = t.ExecuteTemplate(&b, credData["credName"], credData)
 	if err != nil {
 		return nil, err
 	}
@@ -369,5 +380,139 @@ func (c *CredentialStore) InitializeDB() (err error) {
 	}
 
 	return nil
+
+}
+
+func (c *CredentialStore) CreateCredentialFromMap2(credData map[string]any) (rawJsonCred json.RawMessage, err error) {
+
+	cd := gyaml.New(credData)
+
+	// Check if the issuer has already an account
+	issuer := cd.DString(".issuerDID")
+	v := vault.NewFromDBClient(c.Client)
+	_, err = v.QueryAccount(issuer)
+	if err != nil {
+		return nil, err
+	}
+
+	var jwk *jwt.JWK
+	// Get the private key ID. If not specified, get the first one
+	if keyID, err := cd.String(".issuerKeyID"); err == nil {
+
+		// KeyID specified, try to get it from the store
+		jwk, err = v.QueryJWKByID(keyID)
+		if err != nil {
+			return nil, err
+		}
+
+	} else {
+
+		// KeyID was not specified, look for the first one
+		jwks, err := v.QueryJWKSForAccount(issuer)
+		if err != nil {
+			return nil, err
+		}
+		jwk = jwks[0]
+	}
+
+	fmt.Println(jwk)
+
+	// If credential ID specified in the input data, do not generate a new one
+	if _, ok := credData["jti"]; !ok {
+
+		// Generate the id as a UUID
+		jti, err := uuid.NewRandom()
+		if err != nil {
+			return nil, err
+		}
+
+		// Set the unique id in the credential
+		credData["jti"] = jti.String()
+
+	}
+
+	// Generate the credential from the template
+	var b bytes.Buffer
+	err = t.ExecuteTemplate(&b, cd.DString("credName"), credData)
+	if err != nil {
+		zlog.Logger.Error().Err(err).Send()
+		return nil, err
+	}
+
+	// The serialized credential
+	rawJsonCred = b.Bytes()
+	fmt.Printf("%v\n\n", string(rawJsonCred))
+
+	// Parse the resulting byte string
+	data, err := gyaml.ParseYamlBytes(rawJsonCred)
+	if err != nil {
+		zlog.Logger.Error().Err(err).Send()
+		return nil, err
+	}
+
+	// Generate a formatted JSON string
+	// rj, err := json.MarshalIndent(data.Data(), "", "  ")
+	// if err != nil {
+	// 	zlog.Logger.Error().Err(err).Send()
+	// 	return nil, err
+	// }
+
+	// // Validate the generated JSON, just in case the template is malformed
+	// m, ok := gjson.ParseBytes(b.Bytes()).Value().(map[string]interface{})
+	// if !ok {
+	// 	zlog.Error().Msg("Error validating JSON")
+	// 	return nil, nil
+	// }
+
+	signedString, err := v.SignWithJWK(jwk, data.Data())
+
+	fmt.Println("\nVerifying the credential")
+	_, err = c.CredentialFromJWT(signedString)
+	if err != nil {
+		zlog.Logger.Error().Err(err).Send()
+		return nil, err
+	}
+
+	return []byte(signedString), nil
+
+}
+
+type CredentialDecoded struct {
+	jwt.RegisteredClaims
+	Other map[string]any
+}
+
+func (c *CredentialStore) CredentialFromJWT(credSerialized string) (rawJsonCred json.RawMessage, err error) {
+
+	v := vault.NewFromDBClient(c.Client)
+
+	cred := &CredentialDecoded{}
+
+	// Parse the serialized string into the structure, no signature validation yet
+	token, err := jwt.NewParser().ParseUnverified2(credSerialized, cred)
+	if err != nil {
+		return nil, err
+	}
+
+	// Enable for Debugging
+	zlog.Debug().Msg("Parsed Token")
+	if out, err := json.MarshalIndent(token, "", "   "); err == nil {
+		zlog.Debug().Msg(string(out))
+	}
+
+	// Verify the signature
+	err = v.VerifySignature(token.ToBeSignedString, token.Signature, token.Alg(), token.Kid())
+	if err != nil {
+		return nil, err
+	}
+
+	// Debugging
+	out, err := json.MarshalIndent(cred, "", "   ")
+	if err != nil {
+		return nil, err
+	}
+
+	fmt.Println(string(out))
+	return nil, nil
 
 }

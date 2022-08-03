@@ -9,7 +9,6 @@ import (
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/pterm/pterm"
 	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 	zlog "github.com/rs/zerolog/log"
 )
 
@@ -131,58 +130,4 @@ func Clear() {
 func WaitAnyKey() {
 	fmt.Println("\nPress Enter to continue")
 	fmt.Scanln()
-}
-
-func askPassword() (password string) {
-
-	// The promt with the help text
-	prompt := &survey.Input{
-		Message: "Enter the password for the account",
-		Help:    "Enter the password for the account",
-	}
-
-	// Prepare the question
-	qs := []*survey.Question{
-		{
-			Name:   "name",
-			Prompt: prompt,
-		},
-	}
-
-	// Perform the actual question
-	err := survey.Ask(qs, &password)
-	if err != nil {
-		log.Error().Err(err).Msg("")
-		return ""
-	}
-
-	return
-
-}
-
-func askText(promptText string) (theText string) {
-
-	// The promt with the help text
-	prompt := &survey.Input{
-		Message: promptText,
-		Help:    promptText,
-	}
-
-	// Prepare the question
-	qs := []*survey.Question{
-		{
-			Name:   "name",
-			Prompt: prompt,
-		},
-	}
-
-	// Perform the actual question
-	err := survey.Ask(qs, &theText)
-	if err != nil {
-		log.Error().Err(err).Msg("")
-		return ""
-	}
-
-	return
-
 }

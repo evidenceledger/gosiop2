@@ -323,9 +323,9 @@ func (eu *EUDCC) DecodeUntaggedCOSE() error {
 
 }
 
-type PublicKeyResolution func(*EUDCC) (*jwt.JWK_EC, error)
+type PublicKeyResolution func(*EUDCC) (*jwt.JWK, error)
 
-type PrivateKeyResolution func(*EUDCC) (*jwt.JWK_EC, error)
+type PrivateKeyResolution func(*EUDCC) (*jwt.JWK, error)
 
 // VerifyWith uses the public key provided by the keyFunc argument to verify the signature
 // of a previously decoded EUDCC structure

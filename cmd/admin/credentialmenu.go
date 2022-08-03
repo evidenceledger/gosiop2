@@ -1,4 +1,4 @@
-package adminmenu
+package admin
 
 import (
 	"fmt"
@@ -72,7 +72,7 @@ func NewCredentialsMenu(v *vault.Vault, acc *ent.Account) *CredentialsMenu {
 		},
 		{
 			Title:  "Delete an Account and All associated Keys",
-			Action: menuItemNotImplemented,
+			Action: menusystem.MenuItemNotImplemented,
 		},
 	}
 

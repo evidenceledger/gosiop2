@@ -1,4 +1,4 @@
-package adminmenu
+package admin
 
 import (
 	"github.com/evidenceledger/gosiop2/internal/menusystem"
@@ -12,11 +12,11 @@ var dangerousMenu = menusystem.Menu{
 	MenuItems: []menusystem.MenuItem{
 		{
 			Title:  "Delete a Key from an Account",
-			Action: menuItemNotImplemented,
+			Action: menusystem.MenuItemNotImplemented,
 		},
 		{
 			Title:  "Delete an Account and All associated Keys",
-			Action: menuItemNotImplemented,
+			Action: menusystem.MenuItemNotImplemented,
 		},
 	},
 }

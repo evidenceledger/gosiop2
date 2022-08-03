@@ -1,4 +1,4 @@
-package adminmenu
+package admin
 
 import (
 	"github.com/evidenceledger/gosiop2/ent"
@@ -45,7 +45,7 @@ func NewAccountMenu(v *vault.Vault, acc *ent.Account) *AccountMenu {
 		},
 		{
 			Title:  "Example menu item 2",
-			Action: menuItemNotImplemented,
+			Action: menusystem.MenuItemNotImplemented,
 		},
 	}
 
@@ -110,7 +110,7 @@ func (m *AccountMenu) addAccount(values ...any) error {
 	v := m.vault
 
 	// Ask for the name of the account to be created
-	name := askText("Name of account", "The name of the account to be created")
+	name := menusystem.AskText("Name of account", "The name of the account to be created")
 	if len(name) == 0 {
 		return nil
 	}

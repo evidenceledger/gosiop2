@@ -2,6 +2,8 @@ package vault
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strings"
@@ -10,7 +12,6 @@ import (
 	"github.com/evidenceledger/gosiop2/ent"
 	"github.com/evidenceledger/gosiop2/ent/account"
 	"github.com/evidenceledger/gosiop2/internal/jwt"
-	"github.com/evidenceledger/gosiop2/vault/key"
 
 	_ "github.com/mattn/go-sqlite3"
 	"github.com/rs/zerolog"
@@ -100,8 +101,8 @@ func (v *Vault) AddKeyToAccount(name string) (*ent.PrivateKey, error) {
 		return nil, err
 	}
 
-	// Create a new private key.
-	privKey, err := key.NewECDSA()
+	// Create a new private key, of the preferred type
+	privKey, err := jwt.NewECDSA()
 	if err != nil {
 		zlog.Error().Err(err).Msg("failed creating new native ECDSA key")
 		return nil, err
@@ -157,7 +158,7 @@ func (v *Vault) QueryAccount(name string) (acc *ent.Account, err error) {
 
 }
 
-func (v *Vault) QueryJWKSForAccount(name string) (keys []*key.JWK, err error) {
+func (v *Vault) QueryJWKSForAccount(name string) (keys []*jwt.JWK, err error) {
 
 	acc, err := v.QueryAccount(name)
 	if err != nil {
@@ -171,10 +172,10 @@ func (v *Vault) QueryJWKSForAccount(name string) (keys []*key.JWK, err error) {
 		return nil, err
 	}
 
-	keys = make([]*key.JWK, len(entKeys))
+	keys = make([]*jwt.JWK, len(entKeys))
 
 	for i, k := range entKeys {
-		jwkKey, err := key.NewFromBytes(k.Jwk)
+		jwkKey, err := jwt.NewFromBytes(k.Jwk)
 		if err != nil {
 			continue
 		}
@@ -184,7 +185,7 @@ func (v *Vault) QueryJWKSForAccount(name string) (keys []*key.JWK, err error) {
 	return keys, nil
 }
 
-func (v *Vault) QueryJWKByID(id string) (jwk *key.JWK, err error) {
+func (v *Vault) QueryJWKByID(id string) (jwkKey *jwt.JWK, err error) {
 
 	// Retrieve key by its ID, which should be unique
 	k, err := v.Client.PrivateKey.Get(v.Ctx, id)
@@ -193,12 +194,44 @@ func (v *Vault) QueryJWKByID(id string) (jwk *key.JWK, err error) {
 	}
 
 	// Convert to JWK format
-	jwk, err = key.NewFromBytes(k.Jwk)
+	jwkKey, err = jwt.NewFromBytes(k.Jwk)
 	if err != nil {
 		return nil, err
 	}
 
-	return jwk, err
+	return jwkKey, err
+}
+
+// SignJWT signs the JWT using the algorithm and key ID in its header
+func (v *Vault) SignWithJWK(k *jwt.JWK, claims any) (signedString string, err error) {
+
+	var jsonValue []byte
+	var toBeSigned string
+
+	// Create the headerMap
+	headerMap := map[string]string{
+		"typ": "JWT",
+		"alg": k.GetAlg(),
+		"kid": k.GetKid(),
+	}
+
+	if jsonValue, err = json.Marshal(headerMap); err != nil {
+		return "", err
+	}
+	header := base64.RawURLEncoding.EncodeToString(jsonValue)
+
+	if jsonValue, err = json.Marshal(claims); err != nil {
+		return "", err
+	}
+	claim := base64.RawURLEncoding.EncodeToString(jsonValue)
+
+	toBeSigned = strings.Join([]string{header, claim}, ".")
+
+	// Perform the signature
+	signedString, err = v.SignString(toBeSigned, headerMap["kid"])
+
+	return signedString, err
+
 }
 
 // SignJWT signs the JWT using the algorithm and key ID in its header
@@ -212,31 +245,34 @@ func (v *Vault) SignJWT(token *jwt.Token) (signedString string, err error) {
 	}
 
 	// Perform the signature
-	signedString, err = v.SignString(toBeSigned, token.Alg(), token.Kid())
+	signedString, err = v.SignString(toBeSigned, token.Kid())
 
 	return signedString, err
 
 }
 
 // SignString signs the string using the key with given ID and using algorithm alg
-func (v *Vault) SignString(toBeSigned string, alg string, kid string) (signedString string, err error) {
+func (v *Vault) SignString(toBeSigned string, kid string) (signedString string, err error) {
 
 	var signature string
 
-	// Get the method for signing
-	method := jwt.GetSigningMethod(alg)
-
 	// Get the private key for signing
-	jwk, err := v.QueryJWKByID(kid)
+	jwkKey, err := v.QueryJWKByID(kid)
 	if err != nil {
 		return "", err
 	}
 
 	// Convert the key to native
-	key, err := jwk.GetPrivateKey()
+	key, err := jwkKey.GetPrivateKey()
 	if err != nil {
 		return "", err
 	}
+
+	// Get the algorithm from the JWK (it is compulsory for our application)
+	alg := jwkKey.GetAlg()
+
+	// Get the method for signing
+	method := jwt.GetSigningMethod(alg)
 
 	// Sign the string
 	if signature, err = method.Sign(toBeSigned, key); err != nil {
@@ -252,13 +288,18 @@ func (v *Vault) SignString(toBeSigned string, alg string, kid string) (signedStr
 func (v *Vault) VerifySignature(signedString string, signature string, alg string, kid string) (err error) {
 
 	// Get the key for verification
-	jwk, err := v.QueryJWKByID(kid)
+	jwkKey, err := v.QueryJWKByID(kid)
 	if err != nil {
 		return err
 	}
 
+	// Check that the externally specified 'alg' matches the 'alg' in the JWK
+	if jwkKey.GetAlg() != alg {
+		return fmt.Errorf("alg does not match with alg in the JWK")
+	}
+
 	// Convert the key to native
-	key, err := jwk.GetPublicKey()
+	key, err := jwkKey.GetPublicKey()
 	if err != nil {
 		return err
 	}

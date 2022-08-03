@@ -1,4 +1,4 @@
-package adminmenu
+package admin
 
 import (
 	"fmt"
@@ -34,6 +34,10 @@ func NewSIOPMenu(v *vault.Vault) *SIOPMenu {
 		{
 			Title:  "List Accounts",
 			Action: m.listAccounts,
+		},
+		{
+			Title:  "Add Account",
+			Action: m.addAccount,
 		},
 		{
 			Title:  "Account Management",
@@ -123,6 +127,27 @@ func (m *SIOPMenu) listAccounts(values ...any) error {
 
 }
 
+func (m *SIOPMenu) addAccount(values ...any) error {
+
+	v := m.vault
+
+	// Ask for the name of the account to be created
+	name := menusystem.AskText("Name of account", "The name of the account to be created")
+	if len(name) == 0 {
+		return nil
+	}
+
+	acc, err := v.CreateAccountWithKey(name)
+	if err != nil {
+		zlog.Error().Err(err).Msg("adding account")
+		return err
+	}
+	pterm.Success.Printfln("%v", acc)
+
+	menusystem.WaitAnyKey()
+	return nil
+}
+
 func Start(cmd *cobra.Command, args []string) {
 
 	// Prepare to read the configuration for the Vault
@@ -130,8 +155,9 @@ func Start(cmd *cobra.Command, args []string) {
 	cfg := viper.New()
 	cfg.SetConfigName("vaultconfig.yaml")
 	cfg.SetConfigType("yaml")
-	cfg.AddConfigPath("$HOME/.config/vault")
 	cfg.AddConfigPath(".")
+	cfg.AddConfigPath("./configs")
+	cfg.AddConfigPath("$HOME/.config/vault")
 
 	// Read the configuration values
 	err := cfg.ReadInConfig()
