@@ -494,11 +494,11 @@ func (c *CredentialStore) CredentialFromJWT(credSerialized string) (rawJsonCred 
 		return nil, err
 	}
 
-	// Enable for Debugging
-	zlog.Debug().Msg("Parsed Token")
-	if out, err := json.MarshalIndent(token, "", "   "); err == nil {
-		zlog.Debug().Msg(string(out))
-	}
+	// // Enable for Debugging
+	// zlog.Debug().Msg("Parsed Token")
+	// if out, err := json.MarshalIndent(token, "", "   "); err == nil {
+	// 	zlog.Debug().Msg(string(out))
+	// }
 
 	// Verify the signature
 	err = v.VerifySignature(token.ToBeSignedString, token.Signature, token.Alg(), token.Kid())
@@ -506,13 +506,13 @@ func (c *CredentialStore) CredentialFromJWT(credSerialized string) (rawJsonCred 
 		return nil, err
 	}
 
-	// Debugging
-	out, err := json.MarshalIndent(cred, "", "   ")
-	if err != nil {
-		return nil, err
+	// Display the formatted JSON structure
+	st := map[string]any{}
+	json.Unmarshal(token.ClaimBytes, &st)
+	if out, err := json.MarshalIndent(st, "", "   "); err == nil {
+		zlog.Debug().Msg(string(out))
 	}
 
-	fmt.Println(string(out))
 	return nil, nil
 
 }

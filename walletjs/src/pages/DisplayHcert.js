@@ -10,7 +10,7 @@ import warning_image from "../img/warning.png"
 
 var testQR = "HC1:NCFOXN%TSMAHN-H%WKPL9/BP:BCP6M-AH0VC1ROT$SD PO%I$TQ3.P:.IO6T+6NNO4*J8OX4W$C2VLWLIVO5ON1: B.T1RTOF:P ZPEX9Z0QTU1B+HON1MU9%*JJR3Z+INTICZUKSR*LA/CJ6IAXPMHQ1*P1TU19UEOQ1OH6CN5ILGBUHSHA.W2YJ2/E2VZ1W6A8C9IEP2SAC/9B95ZE9Q$95:UENEUW66469366JDO$9KZ56DE/.QC$Q3J62:6LZ6O59++9-G9+E93ZMV70- CC8C90JK.A+ C/8DXEDKG0CGJ5AL5:4/60O3P:XRUVI/E2$4JY/K0:S6QNROF GVV378.GTGV /KH-KVLV5KN+*431TF68UXD-I69NTCW4HKLT*QGTA W7G 7N31BUUSS1SC5X%06W0H*OVIUH$AA2A PK7+O8ZEBPJT8IDBSQ7O574J98%.BWUN*7K:JVR%DAQOU/CZ$9N$LN0G$X8G+MJNRFNB4CRDMA 203F2.3"
 
-var debugging = false
+var debugging = true
 
 window.MHR.register("DisplayHcert", class DisplayHcert extends window.MHR.AbstractPage {
 
@@ -74,14 +74,10 @@ window.MHR.register("DisplayHcert", class DisplayHcert extends window.MHR.Abstra
             return;
         }
 
-        let fullPage = this.html`
-        <div class="text-center">
-
+        let fullPage = html`
+        <div class="w3-center">
             ${thehtml}
-
-            <button class="btn-primary" @click=${()=> window.MHR.gotoPage("ScanQrPage")}>
-            ${T("Verify another")}</button>
-
+            <btn-primary @click=${()=> window.MHR.gotoPage("ScanQrPage")}>${T("Verify another")}</btn-primary>
         </div>
         `
         this.render(fullPage)
@@ -104,17 +100,17 @@ window.MHR.register("DisplayHcert", class DisplayHcert extends window.MHR.Abstra
         // Parameters in case of correct validation
         let title = "Validated"
         let image = ok_image
-        let color = "bg-success"
+        let color = "color-success"
 
         // Modify the parameters if WARNING or ERROR
         if (verification.result === "WARNING") {
             title = "Warning"
             image = warning_image
-            color = "bg-warning"
+            color = "color-warning"
         } else if (verification.result === "ERROR") {
             title = "Not Validated"
             image = error_image
-            color = "bg-error"
+            color = "color-error"
         }
 
         let thehtml = this.html`

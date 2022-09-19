@@ -1,6 +1,6 @@
 import { html } from 'uhtml'
 
-window.MHR.register("SWNotify", class SWNotify extends window.MHR.AbstractPage {
+window.MHR.register("ErrorPage", class ErrorPage extends window.MHR.AbstractPage {
 
     constructor(id) {
         super(id)
@@ -8,11 +8,14 @@ window.MHR.register("SWNotify", class SWNotify extends window.MHR.AbstractPage {
 
     enter(pageData) {
 
-        let msg
-        if (pageData && pageData.isUpdate) {
-            msg = T("Application updated")
-        } else {
-            msg = T("Application available")
+        let title = T("Error")
+        if (pageData && pageData.title) {
+            title = T(pageData.title)
+        }
+
+        let msg = T("An error has happened.")
+        if (pageData && pageData.msg) {
+            msg = T(pageData.msg)
         }
 
         let theHtml = html`
@@ -20,22 +23,21 @@ window.MHR.register("SWNotify", class SWNotify extends window.MHR.AbstractPage {
             <div class="w3-card-4 w3-center">
         
                 <header class="w3-container w3-center color-primary">
-                    <h3>${msg}</h3>
+                    <h3>${title}</h3>
                 </header>
         
                 <div class="w3-container">
-                    <p>${T("There is a new version of the application and it has already been updated.")}</p>
+                    <p>${msg}</p>
                     <p>${T("Please click Accept to refresh the page.")}</p>
                 </div>
                 
-                <div class="w3-container w3-center">
-                    <btn-primary class="w3-margin-bottom" onclick=${()=>window.location.reload()}>${T("Accept")}</btn-primary>        
+                <div class="w3-container w3-center w3-padding">
+                    <btn-primary onclick=${()=>window.location.reload()}>${T("Accept")}</btn-primary>        
                 </div>
 
             </div>
         </div>
         `
-
         this.render(theHtml)
     }
 })

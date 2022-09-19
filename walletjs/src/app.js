@@ -91,11 +91,11 @@ async function gotoPage(pageName, pageData) {
 // Handle page transition
 async function processPageEntered(pageName, pageData, historyData) {
 
-    // Hide the Splash Screen
-    let elem = document.getElementById("SplashScreen")
-    if (elem) {
-        elem.style.display = "none"
-    }    
+    // // Hide the Splash Screen
+    // let elem = document.getElementById("SplashScreen")
+    // if (elem) {
+    //     elem.style.display = "none"
+    // }    
 
     // Hide all pages of the application. Later we unhide the one we are entering
     // We also tell all other pages to exit, so they can perform any cleanup
@@ -147,19 +147,19 @@ async function processPageEntered(pageName, pageData, historyData) {
 
 // Listen for PopStateEvent (navigator Back or Forward buttons are clicked)
 window.addEventListener("popstate", async function (event) {
-    // Set defaults
-    var pageName = homePage;
-    var pageData = undefined;
-
-    // Get current state data if not null
+    // Ignore the event if state does not have data
     var state = event.state;
-    if (state != null) {
-        pageName = state.pageName;
-        pageData = state.pageData;
+    if (state == null) {
+        return
     }
+
+    // Get the page name and data to send
+    var pageName = state.pageName;
+    var pageData = state.pageData;
 
     // Process the page transition
     await processPageEntered(pageName, pageData, true);
+
 });
 
 
@@ -291,14 +291,6 @@ function hideMenu() {
         x.classList.add("hidden")
     }
 }
-// @ts-ignore
-function resetAndGoHome(e) {
-    hideMenu()
-    // @ts-ignore
-    if (window.MHR.goHome) {
-        goHome()
-    }
-}
 function T(e) {
     // @ts-ignore
     if (window.T) {
@@ -309,14 +301,13 @@ function T(e) {
 }
 
 // @ts-ignore
-function newresetAndGoHome(e) {
-    HeaderBar()
+function resetAndGoHome(e) {
+    HeaderBar(false)
     // @ts-ignore
     if (window.MHR.goHome) {
         goHome()
     }
 }
-
 
 function HeaderBar(menu = false) {
     let header = document.querySelector('header')
@@ -326,31 +317,27 @@ function HeaderBar(menu = false) {
 
     if (menu) {
         subMenu = html`
-        <div id="mainmenu" class="w3-bar-block w3-card">
+        <div id="mainmenu" class="w3-bar-block w3-card color-medium">
             ${window.
             // @ts-ignore
             menuItems.map(
-                ({page, params, text}) => html`<a href="#" class="w3-bar-item w3-button" onclick=${()=>gotoPage(page, params)}>${text}</a>`
+                ({page, params, text}) => html`<a href="#" class="w3-bar-item w3-button" onclick=${()=>{HeaderBar();gotoPage(page, params)}}>${text}</a>`
             )}
         </div>
         `;
     }
 
     var fullHB = html`
-    <div class="w3-content">
+<div class="w3-bar w3-card w3-large color-primary">
+    <a class="w3-bar-item w3-btn" onclick=${() => resetAndGoHome()}>
+        <img style="height:1.5em; margin-bottom:5px" src="/evidencesmall.png" alt="EvidenceLedger logo">
+    </a>
+    <div class="w3-bar-item">Privacy Wallet</div>
+    <a class="w3-bar-item w3-btn w3-right" onclick=${() => HeaderBar(flag)}>☰</a>
+</div>
 
-        <div class="w3-bar w3-card w3-large">
-            <a class="w3-bar-item w3-btn" onclick=${() => resetAndGoHome()}>
-                <img style="height:1.5em; margin-bottom:5px" src="/evidencesmall.png" alt="EvidenceLedger logo">
-            </a>
-            <div class="w3-bar-item">Privacy Wallet</div>
-            <a class="w3-bar-item w3-btn w3-right" onclick=${() => HeaderBar(flag)}>☰</a>
-        </div>
-
-        ${subMenu}
-    
-    </div>
-    `;
+${subMenu}    
+`;
     
     // @ts-ignore
     render(header, fullHB)
@@ -368,6 +355,9 @@ class AbstractPage {
     domElem;        // The DOM Element that holds the page
     pageName;       // The name of the page for routing
 
+    /**
+     * @param {string} id
+     */
     constructor(id) {
         if (!id) { throw "A page name is needed"}
 
@@ -375,11 +365,11 @@ class AbstractPage {
         this.html = html
 
         // Create a <div> tag to contain the page
-        this.domElem = document.createElement('div')
+        this.domElem = document.createElement('page')
 
         // Set the id and name of the page for routing
         this.pageName = id
-        this.domElem.id = this.pageName
+        this.domElem.id = id
 
         // Register the page in the router
         route(this.pageName, this)
@@ -399,15 +389,28 @@ class AbstractPage {
 
     render(theHtml) {
         // This is called by subclasses to render its contents
+
+        // Hide the Splash Screen (just in case it was being displayed)
+        let elem = document.getElementById("SplashScreen")
+        if (elem) {
+            elem.style.display = "none"
+        }    
+
         // Show the page
         this.domElem.style.display = "block"
+
         // Redraw the header just in case the menu was active
         HeaderBar()
+
         // Render the html of the page into the DOM element of this page
         render(this.domElem, theHtml)
     }
 }
 
+/**
+ * @param {string} pageName
+ * @param {any} classDefinition
+ */
 function register(pageName, classDefinition) {
     let instance = new classDefinition(pageName)
 }

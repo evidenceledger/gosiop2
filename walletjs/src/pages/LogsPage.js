@@ -22,16 +22,17 @@ window.MHR.register("LogsPage", class LogsPage extends window.MHR.AbstractPage {
         }
 
         let theHtml = html`
-        <div class="container">
-            <h2 class="mb-16 wball">${T("Displaying the technical logs")}</h2>
+        <div class="w3-container">
+            <h2>${T("Technical logs")}</h2>
+        </div>
 
-            <ul>
-                ${items.map(
-                ({timestamp, desc}, i) => html`<li class="bb-1 wball">${shortDate(timestamp)}-${desc}</li>`
-                )}
-            </ul>
+        <ul class="w3-ul">
+            ${items.map(
+            ({timestamp, desc}, i) => html`<li>${shortDate(timestamp)}-${desc}</li>`
+            )}
+        </ul>
 
-        </div>`;
+        `;
 
         this.render(theHtml)
     }

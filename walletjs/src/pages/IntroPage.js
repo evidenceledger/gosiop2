@@ -10,7 +10,7 @@ function Card(content) {
 
         <div class="w3-cell-row">
 
-            <div class="w3-cell w3-container w3-primary w3-round-top-left" style="width:70%">
+            <div class="w3-cell w3-container color-primary w3-round-top-left" style="width:70%">
                 <div>Logo</div>
             </div>
 
@@ -70,6 +70,15 @@ window.MHR.register("IntroPage", class IntroPage extends window.MHR.AbstractPage
     async enter() {
 
         var cards = await getCredentialList()
+        if (cards == null) {
+            let theHtml = html`
+            <div class="w3-panel w3-margin w3-card w3-center w3-round color-error">
+                <p>Error retrieving credentials from the server</p>
+            </div>
+            `;
+            this.render(theHtml)
+            return             
+        }
 
         let theHtml = html`
         <div class="w3-content w3-margin-top">
@@ -83,9 +92,9 @@ window.MHR.register("IntroPage", class IntroPage extends window.MHR.AbstractPage
             </div>
             
             <div class="w3-center">
-                <button class="w3-btn w3-primary" onclick='${() => window.MHR.gotoPage("ScanQrPage")}'>
+                <btn-primary onclick='${this.gotoScanQrPage}'>
                     ${T("The start")}
-                </button>
+                </btn-primary>
             </div>
         </div>
         `;
@@ -94,8 +103,11 @@ window.MHR.register("IntroPage", class IntroPage extends window.MHR.AbstractPage
 
     }
 
-})
+    async gotoScanQrPage() {
+//        window.MHR.gotoPage("ScanQrPage")
+    }
 
+})
 
 
 async function getCredentialList(backEndpoint) {
@@ -106,7 +118,7 @@ async function getCredentialList(backEndpoint) {
         var cards = await response.json()
     } catch (error) {
         log.error(error)
-        throw "ERROR getting the cards"
+        return null
     }
 
     return cards

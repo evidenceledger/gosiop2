@@ -7,75 +7,46 @@ import frflag from '../i18n/flags/fr.png'
 import deflag from '../i18n/flags/de.png'
 import itflag from '../i18n/flags/it.png'
 
-export default class SelectLanguage extends window.MHR.AbstractPage {
+window.MHR.register("SelectLanguage", class SelectLanguage extends window.MHR.AbstractPage {
 
     constructor(id) {
-        super("SelectLanguage")
+        super(id)
     }
 
     enter() {
-        console.log("Select language")
 
         let theHtml = html`
-    <h2 class="text-center text-lg font-semibold my-3">Select a language</h2>
+<section class="w3-container">
 
-    <ul>
+    <h2>Select a language</h2>
 
-        <li class="mx-4 my-2 shadow-md"> 
-            <a @click=${()=>this.selectLang("en")} href="javascript:void(0)">
-                <div class="flex p-2">
-                    <img class="mr-4" src=${ukflag} style="width:70px;height:45px">
-                    <span class="my-auto font-medium">English</span>
-                </div>
-            </a>
-        </li>
-
-        <li class="mx-4 my-2 shadow-md"> 
-            <a @click=${()=>this.selectLang("ca")} href="javascript:void(0)">
-                <div class="flex p-2">
-                    <img class="mr-4" src=${caflag} style="width:70px;height:45px">
-                    <span class="my-auto font-medium">Català</span>
-                </div>
-            </a>
-        </li>
-
-        <li class="mx-4 my-2 shadow-md">
-            <a @click=${()=>this.selectLang("es")} href="javascript:void(0)">
-                <div class="flex p-2">
-                    <img class="mr-4" src=${esflag} style="width:70px;height:45px">
-                    <span class="my-auto font-medium">Español</span>
-                </div>
-            </a>
-        </li>
-
-        <li class="mx-4 my-2 shadow-md">
-            <a @click=${()=>this.selectLang("fr")} href="javascript:void(0)">
-                <div class="flex p-2">
-                    <img class="mr-4" src=${frflag} style="width:70px;height:45px">
-                    <span class="my-auto font-medium">Français</span>
-                </div>
-            </a>
-        </li>
-
-        <li class="mx-4 my-2 shadow-md">
-            <a @click=${()=>this.selectLang("de")} href="javascript:void(0)">
-                <div class="flex p-2">
-                    <img class="mr-4" src=${deflag} style="width:70px;height:45px">
-                    <span class="my-auto font-medium">Deutsch</span>
-                </div>
-            </a>
-        </li>
-
-        <li class="mx-4 my-2 shadow-md">
-            <a @click=${()=>this.selectLang("it")} href="javascript:void(0)">
-                <div class="flex p-2">
-                    <img class="mr-4" src=${itflag} style="width:70px;height:45px">
-                    <span class="my-auto font-medium">Italiano</span>
-                </div>
-            </a>
-        </li>
-
-    </ul>
+    <div class="w3-bar-block w3-card">
+        <a class="w3-bar-item w3-btn w3-border" @click=${()=>this.selectLang("en")} href="javascript:void(0)">
+            <img src=${ukflag} style="width:70px;height:45px">
+            <span class="w3-margin-left">English</span>
+        </a>
+        <a class="w3-bar-item w3-btn w3-border" @click=${()=>this.selectLang("ca")} href="javascript:void(0)">
+            <img src=${caflag} style="width:70px;height:45px">
+            <span class="w3-margin-left">Català</span>
+        </a>
+        <a class="w3-bar-item w3-btn w3-border" @click=${()=>this.selectLang("es")} href="javascript:void(0)">
+            <img src=${esflag} style="width:70px;height:45px">
+            <span class="w3-margin-left">Español</span>
+        </a>
+        <a class="w3-bar-item w3-btn w3-border" @click=${()=>this.selectLang("fr")} href="javascript:void(0)">
+            <img src=${frflag} style="width:70px;height:45px">
+            <span class="w3-margin-left">Français</span>
+        </a>
+        <a class="w3-bar-item w3-btn w3-border" @click=${()=>this.selectLang("de")} href="javascript:void(0)">
+            <img src=${deflag} style="width:70px;height:45px">
+            <span class="w3-margin-left">Deutsch</span>
+        </a>
+        <a class="w3-bar-item w3-btn w3-border" @click=${()=>this.selectLang("it")} href="javascript:void(0)">
+            <img src=${itflag} style="width:70px;height:45px">
+            <span class="w3-margin-left">Italiano</span>
+        </a>
+    </div>
+</section>
 `
         this.render(theHtml)
     }
@@ -86,6 +57,5 @@ export default class SelectLanguage extends window.MHR.AbstractPage {
         localStorage.setItem("preferredLanguage", l)
         window.MHR.goHome()
     }
-}
+})
 
-let page = new SelectLanguage()

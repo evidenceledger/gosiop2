@@ -2,6 +2,7 @@
   "name": "walletng",
   "version": "0.1.0",
   "scripts": {
+    "vitever": "vite --version",
     "workbox": "workbox generateSW workbox-config.js",
     "dev": "vite",
     "build": "vite build && npm run workbox",

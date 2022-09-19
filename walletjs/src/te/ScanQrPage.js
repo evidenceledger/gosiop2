@@ -226,7 +226,7 @@ register("ScanQrPage", class ScanQrPage extends AbstractPage {
         
                 <div class="ptb-16">
         
-                    <button class="btn-primary" @click=${()=>window.location.reload()}>${T("Accept")}</button>
+                    <btn-primary @click=${()=>window.location.reload()}>${T("Accept")}</btn-primary>
         
                 </div>
         

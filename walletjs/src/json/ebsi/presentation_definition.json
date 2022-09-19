@@ -1,0 +1,40 @@
+{
+  "id_token": { "email": null },
+  "vp_token": {
+    "presentation_definition": {
+      "id": "conformance_mock_vp_request",
+      "input_descriptors": [
+        {
+          "id": "conformance_mock_vp",
+          "name": "Conformance Mock VP",
+          "purpose": "Only accept a VP containing a Conformance Mock VA",
+          "constraints": {
+            "fields": [
+              {
+                "path": ["$.vc.credentialSchema"],
+                "filter": {
+                  "allOf": [
+                    {
+                      "type": "array",
+                      "contains": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "pattern": "https://api.preprod.ebsi.eu/trusted-schemas-registry/v2/schemas/z3kRpVjUFj4Bq8qHRENUHiZrVF5VgMBUe7biEafp1wf2J"
+                          }
+                        },
+                        "required": ["id"]
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "format": { "jwt_vp": { "alg": ["ES256K"] } }
+    }
+  }
+}

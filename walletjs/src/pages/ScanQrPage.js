@@ -17,6 +17,7 @@ const QR_UNKNOWN = 0
 const QR_URL = 1
 const QR_MULTI = 2
 const QR_HC1 = 3
+const QR_SIOP_URL = 4
 
 
 window.MHR.register("ScanQrPage", class ScanQrPage extends window.MHR.AbstractPage {
@@ -125,8 +126,8 @@ window.MHR.register("ScanQrPage", class ScanQrPage extends window.MHR.AbstractPa
 
         } catch (error) {
             log.error("Error getting stream", error)
-            this.render(this.messageErrorGettingStream())
-            return;
+            window.MHR.gotoPage("ErrorPage", {title: "Error getting video stream", msg: "There was an error trying to start the camera."})
+            return
         }
 
     }
@@ -190,6 +191,7 @@ window.MHR.register("ScanQrPage", class ScanQrPage extends window.MHR.AbstractPa
         let qrData
 
         // Detect QR codes in the video element
+        // We will try first the native detector if available (at this moment only on Android)
         if (this.nativeBarcodeDetector) {
             // Native BarcodeDetector is available
 
@@ -222,7 +224,7 @@ window.MHR.register("ScanQrPage", class ScanQrPage extends window.MHR.AbstractPa
             }
     
         } else {
-            // Native support not available, use the javascript library
+            // Native support not available, use the JavaScript library
 
             try {
                 const result = await this.zxingReader.decodeOnceFromVideoElement(this.videoElement.current);     
@@ -244,8 +246,14 @@ window.MHR.register("ScanQrPage", class ScanQrPage extends window.MHR.AbstractPa
 
         // Handle HCERT data
         if (qrType === QR_HC1) {
-            console.log("Going to ", this.displayPage)
-            window.MHR.gotoPage(this.displayPage, qrData)
+            console.log("Going to ", "DisplayHcert")
+            window.MHR.gotoPage("DisplayHcert", qrData)
+            return true;
+        }
+
+        if (qrType === QR_URL) {
+            console.log("Going to ", "DisplayNormalQR")
+            window.MHR.gotoPage("DisplayNormalQR", qrData)
             return true;
         }
 
@@ -282,6 +290,9 @@ window.MHR.register("ScanQrPage", class ScanQrPage extends window.MHR.AbstractPa
         } else if (qrData.startsWith("multi|w3cvc|")) {
             // A multi-piece JWT
             return QR_MULTI;
+        } else if (qrData.startsWith("siop:")) {
+            // A SIOP Authentication Request, URL-encoded
+            return QR_SIOP_URL;
         } else if (qrData.startsWith("https")) {
             // Normal QR with a URL where the real data is located
             // We require secure connections with https
@@ -289,90 +300,6 @@ window.MHR.register("ScanQrPage", class ScanQrPage extends window.MHR.AbstractPa
         } else {
             return QR_UNKNOWN
         }
-    }
-
-    errorMessage(title, message) {
-
-        let theHtml = html`
-        <div class="container">
-            <div class="w3-card-4 center" style="margin-top:100px;">
-        
-                <header class="container color-primary" style="padding:10px">
-                    <h1>${title}</h1>
-                </header>
-        
-                <div class="container ptb-16">
-                    <p>${message}</p>
-                    <p>${T("Please click Accept to refresh the page.")}</p>
-                </div>
-        
-                <div class="ptb-16">
-        
-                    <button class="btn-primary" @click=${()=> window.location.reload()}>${T("Accept")}</button>
-        
-                </div>
-        
-            </div>
-        </div>
-        `
-        return theHtml
-
-    }
-
-    messageErrorGettingStream() {
-
-        let theHtml = html`
-        <div class="container">
-            <div class="w3-card-4 center" style="margin-top:100px;">
-        
-                <header class="container color-primary" style="padding:10px">
-                    <h1>${T("Error getting video stream")}</h1>
-                </header>
-        
-                <div class="container ptb-16">
-                    <p>${T("There was an error trying to start the camera.")}</p>
-                    <p>${T("Please click Accept to refresh the page.")}</p>
-                </div>
-        
-                <div class="ptb-16">
-        
-                    <button class="btn-primary" @click=${()=> window.location.reload()}>${T("Accept")}</button>
-        
-                </div>
-        
-            </div>
-        </div>
-        `
-        return theHtml
-
-    }
-
-    messageNoCameraPermissions() {
-
-        let theHtml = html`
-        <div class="container">
-            <div class="w3-card-4 center" style="margin-top:100px;">
-        
-                <header class="container color-primary" style="padding:10px">
-                    <h1>${T("No camera access")}</h1>
-                </header>
-        
-                <div class="container ptb-16">
-                    <p>${T("You need to allow camera access to be able to scan a QR.")}</p>
-                    <p>${T("Please click Accept to refresh the page.")}</p>
-                </div>
-        
-                <div class="ptb-16">
-        
-                    <button class="btn-primary" @click=${()=> window.location.reload()}>${T("Accept")}</button>
-        
-                </div>
-        
-            </div>
-        </div>
-        `
-        return theHtml
-
     }
 
 })
@@ -518,7 +445,6 @@ async function ReceiveQRtick() {
             // Request to be called again in next frame
             //      setTimeout(ReceiveQRtick, scanRefreshInterval);
             requestAnimationFrame(ReceiveQRtick);
-
 
             // Exit from the function until it will be called again
             return;

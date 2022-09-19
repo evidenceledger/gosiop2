@@ -82,8 +82,8 @@ window.MHR.register("DisplayMyHcert", class DisplayMyHcert extends window.MHR.Ab
         let fullPage = html`
         ${thehtml}
         <div class="sect-white">
-            <button class="btn-primary" @click=${()=> window.MHR.gotoPage("DisplayQR")}>
-            ${T("Display QR")}</button>
+            <btn-primary @click=${()=> window.MHR.gotoPage("DisplayQR")}>
+            ${T("Display QR")}</btn-primary>
         </div>
         `
         this.render(fullPage)

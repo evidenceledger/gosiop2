@@ -1,0 +1,101 @@
+@startuml verifiable-presentation-exchange-cross-device-flow-1
+
+title OIDC SIOP V2 & OIDC4VP - Verifiable Presentation Exchange - Cross-device flow
+
+actor User as u
+box PC
+participant "Browser" as rpw
+end box
+box Mobile
+participant "PWA as\n(SIOP)" as siop
+end box
+participant "Relying Party\n(RP)" as rp
+
+== User visits the RP Website and decides to share VC ==
+
+autonumber
+
+u -> rpw: Visit RP's website\n<url>
+rpw -> rp: HTTP GET <url>
+return HTTP 200\nCredential verifier website
+u -> rpw: Click on\n"Share VCs"
+
+== Starting the SIOP flow ==
+rpw -> rp: HTTP GET /authorisation-requests\nStart the Verifiable Presentation exchange flow
+
+return Page with a QR code with Authentication Request:\nopenid://<siop-authentication-request>
+rpw -> rpw: Render the QR code
+u -> siop: Open PWA in mobile
+u <- siop: AuthN & AuthZ\nLogin/unlock the app
+return Biometrics, pin, username/password, ...
+
+== SIOP V2 flow ==
+siop <- rpw: Scan the QR code with PWA\nopenid://<siop-authentication-request>
+
+@enduml
+
+
+@startuml verifiable-presentation-exchange-cross-device-flow
+
+title OIDC SIOP V2 & OIDC4VP - Verifiable Presentation Exchange - Cross-device flow
+
+actor User as u
+box PC
+participant "Browser" as rpw
+end box
+box Mobile
+participant "PWA as\n(SIOP)" as siop
+end box
+participant "Relying Party\n(RP)" as rp
+
+== User visits the RP Website and decides to share VC ==
+
+autonumber
+
+u -> rpw: Visit RP's website\n<url>
+rpw -> rp: HTTP GET <url>
+return HTTP 200\nCredential verifier website
+u -> rpw: Click on\n"Share VCs"
+
+== Starting the SIOP flow ==
+rpw -> rp: HTTP GET /authorisation-requests\nStart the Verifiable Presentation exchange flow
+
+return Page with a QR code with Authentication Request:\nopenid://<siop-authentication-request>
+rpw -> rpw: Render the QR code
+u -> siop: Open PWA in mobile
+u <- siop: AuthN & AuthZ\nLogin/unlock the app
+return Biometrics, pin, username/password, ...
+
+== SIOP V2 flow ==
+siop <- rpw: Scan the QR code with PWA\nopenid://<siop-authentication-request>
+
+
+siop -> siop: Validate the authentication request
+
+alt IF Registration Metadata inside Auth Request
+    siop -> siop: Registration metadata from Authentication Request
+else ELSE query RP for Registration Metadata
+    siop -> rp: HTTP GET registration_uri\nGet RP Registration metadata
+    return HTTP 200\nRP Registration Metadata
+end
+
+alt IF SIOP supports the same params as RP
+
+    opt User consent
+        siop -> u: Ask user to consent with the VC sharing
+        return Agree/Disagree
+    end
+
+    siop -> u: Prompt user to confirm VC sharing
+    return Confirm/Decline
+
+    siop -> siop: Create and sign a\nVerifiable Presentation
+    siop -> siop: Create Authentication Response\nid_token=eyJ0...J9.eyJ...I60.De...so
+
+    siop -> rp: HTTP POST <redirect_uri>\n&id_token=eyJ0...J9.eyJ...I60.De...so
+
+else ELSE SIOP does not support the same params as RP
+    siop --> rp: HTTP POST <redirect_uri>?\nerror=<error code>\n&state=<state>
+end
+
+@enduml
