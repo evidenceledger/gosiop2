@@ -8,17 +8,18 @@
         // Configure the menu items, with entries like:
         //    {page:"NameOfPage", text:"Text in menu item", params: object to pass to page}
         window.menuItems = [
+            { page: "IntroPage", text: "Home", params: "" },
+            { page: "ScanQrPage", text: "Scan QR", params: "" },
             { page: "SelectLanguage", text: "Language", params: "" },
             { page: "SelectCamera", text: "Camera" },
             { page: "TermsOfUse", text: "Terms & Conditions" },
             { page: "PrivacyPolicy", text: "Privacy policy" },
-            { page: "LogsPageInexistent", text: "Show technical logs" }
+            { page: "LogsPage", text: "Show technical logs" }
         ]
     </script>
     <!-- Load the application -->
     <script type="module" src="./app.js"></script>
 
-    <!-- <link rel="stylesheet" href="/css/w3full.css" media="print" onload="this.media='all'"> -->
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content="Private Verifiable Credentials" />
@@ -63,7 +64,7 @@
 
 </head>
 
-<body>
+<body class="w3-content">
 
 <header>
 </header>

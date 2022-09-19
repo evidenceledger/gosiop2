@@ -25,29 +25,21 @@ window.MHR.register("SelectCamera", class SelectCamera extends window.MHR.Abstra
     }
 
         let theHtml = html`
-        <h2 class="text-center text-lg font-semibold my-3">Select a camera</h2>
-
-        <ul>
+<section class="w3-container">
+    <h2>Select a camera</h2>
+    <div class="w3-bar-block w3-card">
         ${videoDevices.map((camera) =>
-
-            html`
-            <li class="mx-4 my-2 shadow-md">
-                <a @click=${()=>this.setCamera(camera.deviceId)} href="javascript:void(0)">
-                    <div class="flex p-3">
-                    <p class="text-lg font-medium">${camera.label}</p>
-                    </div>
-                </a>
-            </li>`
-            
-            )}
-        </ul>
-
-        `
+        html`
+        <a class="w3-bar-item w3-btn w3-border" @click=${()=>this.setCamera(camera.deviceId)} href="javascript:void(0)">
+            <p class="w3-medium">${camera.label}</p>
+        </a>`        
+        )}
+    </div>
+</section>`
         this.render(theHtml)
     }
 
     async setCamera(l) {
-        console.log("Selecting camera", l)
         window.selectedCamera = l
         localStorage.setItem("selectedCamera", l)
         window.history.back()

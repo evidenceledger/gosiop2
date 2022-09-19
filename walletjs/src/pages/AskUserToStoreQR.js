@@ -24,7 +24,7 @@ window.MHR.register("AskUserToStoreQR", class AskUserToStoreQR extends window.MH
 
                 <div class="ptb-16">
         
-                    <button class="btn-primary" @click=${()=>window.location.replace(location.origin)}>${T("Cancel")}</button>
+                    <btn-primary @click=${()=>window.location.replace(location.origin)}>${T("Cancel")}</btn-primary>
         
                 </div>
             </div>
@@ -50,7 +50,7 @@ window.MHR.register("AskUserToStoreQR", class AskUserToStoreQR extends window.MH
         
                 <div class="ptb-16">
         
-                    <button class="btn-primary" @click=${()=>this.saveQRCertificate()}>${T("Save")}</button>
+                    <btn-primary @click=${()=>this.saveQRCertificate()}>${T("Save")}</btn-primary>
         
                 </div>
         
