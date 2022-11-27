@@ -13,7 +13,7 @@ The library can be used in different contexts and configurations. The following 
 
 ![](docs/images/concept_diagram.drawio.png)
 
-In this scenario, the user is interacting with a web site (the one from the Relaying Party or RP in short) and indicates that it wants to perform an operation where the RP requires to receive a W3C Verifiable Credential from the user.
+In this scenario, the user is interacting with a web site (the one operated by the Relaying Party or RP in short) and indicates that it wants to perform an operation where the RP requires to receive a W3C Verifiable Credential from the user.
 
 The RP then starts the SIOPv2 flow so the user can instruct her wallet to send one of her Verifiable Credentials to the RP. There are different ways to starts the flow, for example displayng a QR code that the user scans with her mobile phone.
 
